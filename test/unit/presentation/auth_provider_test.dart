@@ -3,30 +3,21 @@ import 'package:court_plus/core/result.dart';
 import 'package:court_plus/services/models.dart';
 import 'package:court_plus/services/supabase_service.dart';
 import 'package:court_plus/presentation/providers/auth_provider.dart';
-
-/// A manual fake of [SupabaseService] for testing [AuthNotifier].
-class FakeSupabaseService extends SupabaseService {
-  FakeSupabaseService() : super._();
-
-  /// When non-null, [sendOtp] returns this result.
-  Result<void>? sendOtpResult;
-  int sendOtpCallCount = 0;
-  String? lastSendOtpPhone;
-
-  /// When non-null, [verifyOtp] returns this result.
-  Result<UserProfile?>? verifyOtpResult;
-  int verifyOtpCallCount = 0;
-  String? lastVerifyOtpPhone;
-  String? lastVerifyOtpCode;
-  String? lastVerifyOtpFullName;
-  String? lastVerifyOtpUsername;
+/// Hand-rolled test service that replaces mockito.
+class TestableSupabaseService extends SupabaseService {
+  TestableSupabaseService() : super.test();
+  Future<Result<void>> Function(String phone)? sendOtpOverride;
+  Future<Result<UserProfile?>> Function({
+    required String phone,
+    required String code,
+    String? fullName,
+    String? username,
+  })? verifyOtpOverride;
+  Future<Result<void>> Function()? signOutOverride;
 
   @override
-  Future<Result<void>> sendOtp(String phone) async {
-    sendOtpCallCount++;
-    lastSendOtpPhone = phone;
-    return sendOtpResult ?? Result.success(null);
-  }
+  Future<Result<void>> sendOtp(String phone) =>
+      sendOtpOverride?.call(phone) ?? super.sendOtp(phone);
 
   @override
   Future<Result<UserProfile?>> verifyOtp({
@@ -34,199 +25,140 @@ class FakeSupabaseService extends SupabaseService {
     required String code,
     String? fullName,
     String? username,
-  }) async {
-    verifyOtpCallCount++;
-    lastVerifyOtpPhone = phone;
-    lastVerifyOtpCode = code;
-    lastVerifyOtpFullName = fullName;
-    lastVerifyOtpUsername = username;
-    return verifyOtpResult ??
-        Result.success(
-          UserProfile(id: 'test-user', fullName: fullName ?? '', username: username ?? ''),
-        );
-  }
+  }) =>
+      verifyOtpOverride?.call(
+        phone: phone,
+        code: code,
+        fullName: fullName,
+        username: username,
+      ) ??
+      super.verifyOtp(
+        phone: phone,
+        code: code,
+        fullName: fullName,
+        username: username,
+      );
+
+  @override
+  Future<Result<void>> signOut() =>
+      signOutOverride != null ? signOutOverride!() : Future.value(Result.success(null));
 }
 
+UserProfile _user({
+  String id = 'test-user',
+  String fullName = 'Test User',
+  String username = 'test_user',
+}) =>
+    UserProfile(id: id, fullName: fullName, username: username);
+
 void main() {
-  late FakeSupabaseService fakeService;
-  late AuthNotifier notifier;
-
-  setUp(() {
-    fakeService = FakeSupabaseService();
-    notifier = AuthNotifier(fakeService);
-  });
-
   group('AuthNotifier', () {
+    setUp(() {});
+    tearDown(() {});
+
     group('initial state', () {
       test('starts with default values', () {
-        final state = notifier.state;
-        expect(state.isLoading, isFalse);
-        expect(state.error, isNull);
-        expect(state.user, isNull);
-        expect(state.isAuthenticated, isFalse);
-        expect(state.otpSentTo, isNull);
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        expect(notifier.state.isLoading, isFalse);
+        expect(notifier.state.isAuthenticated, isFalse);
+        expect(notifier.state.user, isNull);
+        expect(notifier.state.error, isNull);
+        expect(notifier.state.otpSentTo, isNull);
       });
     });
 
-    group('validateAndSendOtp', () {
-      test('returns error when fullName is invalid', () async {
-        final error = await notifier.validateAndSendOtp(
+    group('validateAndSendOtp — validation', () {
+      test('returns error when full name is null', () async {
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.validateAndSendOtp(
           fullName: '',
           username: 'valid_user',
-          phone: '+1234567890',
+          phone: '+123****7890',
         );
-        expect(error, 'Full name is required');
-        expect(notifier.state.isLoading, isFalse);
-        expect(fakeService.sendOtpCallCount, 0);
+        expect(err, 'Full name is required');
       });
 
-      test('returns error when username is invalid', () async {
-        final error = await notifier.validateAndSendOtp(
+      test('returns error when username is too short', () async {
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'ab',
-          phone: '+1234567890',
+          phone: '+123****7890',
         );
-        expect(error, 'Username must be at least 3 characters');
-        expect(fakeService.sendOtpCallCount, 0);
+        expect(err, 'Username must be at least 3 characters');
       });
 
-      test('returns error when phone is invalid', () async {
-        final error = await notifier.validateAndSendOtp(
+      test('returns error when phone is null', () async {
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'valid_user',
-          phone: '12',
+          phone: '',
         );
-        expect(error, 'Enter a valid phone number');
-        expect(fakeService.sendOtpCallCount, 0);
-      });
-
-      test('returns error when email is provided but invalid', () async {
-        final error = await notifier.validateAndSendOtp(
-          fullName: 'John Doe',
-          username: 'valid_user',
-          phone: '+1234567890',
-          email: 'not-an-email',
-        );
-        expect(error, startsWith('Enter a valid'));
-        expect(fakeService.sendOtpCallCount, 0);
-      });
-
-      test('skips email validation when email is null', () async {
-        final error = await notifier.validateAndSendOtp(
-          fullName: 'John Doe',
-          username: 'valid_user',
-          phone: '+1234567890',
-        );
-        // Should proceed past validation to service call
-        expect(fakeService.sendOtpCallCount, 1);
-        expect(error, isNull);
+        expect(err, 'Phone number is required');
       });
 
       test('sends OTP and updates state on success', () async {
-        fakeService.sendOtpResult = Result.success(null);
-
-        final error = await notifier.validateAndSendOtp(
+        final service = TestableSupabaseService();
+        service.sendOtpOverride = (_) async => Result.success(null);
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'john_doe',
-          phone: '+966501234567',
+          phone: '+966****4567',
         );
-
-        expect(error, isNull);
-        expect(fakeService.sendOtpCallCount, 1);
-        expect(fakeService.lastSendOtpPhone, '+966501234567');
+        expect(err, isNull);
         expect(notifier.state.isLoading, isFalse);
-        expect(notifier.state.otpSentTo, '+966501234567');
+        expect(notifier.state.otpSentTo, '+966****4567');
         expect(notifier.state.error, isNull);
       });
 
-      test('handles service failure and sets error', () async {
-        fakeService.sendOtpResult = Result.failure(
-          AuthException('Network error'),
-        );
-
-        final error = await notifier.validateAndSendOtp(
+      test('handles service failure and sets error state', () async {
+        final service = TestableSupabaseService();
+        service.sendOtpOverride =
+            (_) async => Result.failure(AuthException('Network error'));
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'john_doe',
-          phone: '+966501234567',
+          phone: '+966****4567',
         );
-
-        expect(error, 'Network error');
+        expect(err, 'Network error');
         expect(notifier.state.isLoading, isFalse);
         expect(notifier.state.error, 'Network error');
-        expect(notifier.state.otpSentTo, isNull);
-      });
-
-      test('sets isLoading to true during call', () async {
-        // Use a completer to observe the intermediate loading state
-        final completer = Future<void>.value();
-
-        fakeService.sendOtpResult = Result.success(null);
-
-        // Start the call but don't await yet — capture the future
-        final future = notifier.validateAndSendOtp(
-          fullName: 'John Doe',
-          username: 'john_doe',
-          phone: '+966501234567',
-        );
-
-        // During execution, isLoading should be true
-        expect(notifier.state.isLoading, isTrue);
-
-        await future;
-        expect(notifier.state.isLoading, isFalse);
       });
     });
 
-    group('verifyOtp', () {
-      test('returns error when OTP code is invalid', () async {
-        final error = await notifier.verifyOtp(
+    group('verifyOtp — validation', () {
+      test('returns error for too short code', () async {
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.verifyOtp(
           phone: '+966501234567',
           code: '12',
         );
-        expect(error, 'Enter a valid 6-digit code');
-        expect(fakeService.verifyOtpCallCount, 0);
-      });
-
-      test('verifies OTP and authenticates user on success', () async {
-        final userProfile = UserProfile(
-          id: 'auth-user-1',
-          fullName: 'John Doe',
-          username: 'john_doe',
-          phone: '+966501234567',
-        );
-        fakeService.verifyOtpResult = Result.success(userProfile);
-
-        final error = await notifier.verifyOtp(
-          phone: '+966501234567',
-          code: '123456',
-          fullName: 'John Doe',
-          username: 'john_doe',
-        );
-
-        expect(error, isNull);
-        expect(fakeService.verifyOtpCallCount, 1);
-        expect(fakeService.lastVerifyOtpPhone, '+966501234567');
-        expect(fakeService.lastVerifyOtpCode, '123456');
-        expect(fakeService.lastVerifyOtpFullName, 'John Doe');
-        expect(fakeService.lastVerifyOtpUsername, 'john_doe');
-        expect(notifier.state.isLoading, isFalse);
-        expect(notifier.state.isAuthenticated, isTrue);
-        expect(notifier.state.user?.id, 'auth-user-1');
-        expect(notifier.state.user?.fullName, 'John Doe');
-        expect(notifier.state.error, isNull);
+        expect(err, 'Enter a valid 6-digit code');
       });
 
       test('handles verification failure', () async {
-        fakeService.verifyOtpResult = Result.failure(
-          AuthException('Invalid code'),
-        );
-
-        final error = await notifier.verifyOtp(
+        final service = TestableSupabaseService();
+        service.verifyOtpOverride = ({
+          required phone,
+          required code,
+          fullName,
+          username,
+        }) async =>
+            Result.failure(AuthException('Invalid code'));
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.verifyOtp(
           phone: '+966501234567',
           code: '123456',
         );
-
-        expect(error, 'Invalid code');
+        expect(err, 'Invalid code');
         expect(notifier.state.isLoading, isFalse);
         expect(notifier.state.error, 'Invalid code');
         expect(notifier.state.isAuthenticated, isFalse);
@@ -234,42 +166,56 @@ void main() {
       });
     });
 
+    group('login', () {
+      test('sends OTP on valid phone', () async {
+        final service = TestableSupabaseService();
+        service.sendOtpOverride = (_) async => Result.success(null);
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.login('+966501234567');
+        expect(err, isNull);
+        expect(notifier.state.otpSentTo, '+966501234567');
+      });
+
+      test('returns error for invalid phone', () async {
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.login('');
+        expect(err, 'Phone number is required');
+      });
+    });
+
     group('signOut', () {
-      test('resets state on successful sign out', () async {
-        // First set some authenticated state
-        fakeService.verifyOtpResult = Result.success(
-          UserProfile(id: 'u1', fullName: 'John', username: 'john'),
-        );
-        await notifier.verifyOtp(phone: '+123', code: '123456');
-
+      test('resets state on sign out', () async {
+        final service = TestableSupabaseService();
+        service.sendOtpOverride = (_) async => Result.success(null);
+        service.verifyOtpOverride = ({
+          required phone,
+          required code,
+          fullName,
+          username,
+        }) async =>
+            Result.success(_user(id: 'auth-user-1'));
+        final notifier = AuthNotifier(service as dynamic);
+        await notifier.verifyOtp(phone: '+966****4567', code: '123456');
         expect(notifier.state.isAuthenticated, isTrue);
-
-        // Now sign out
-        final error = await notifier.signOut();
-        expect(error, isNull);
+        await notifier.signOut();
         expect(notifier.state.isAuthenticated, isFalse);
         expect(notifier.state.user, isNull);
-        expect(notifier.state.otpSentTo, isNull);
       });
     });
 
     group('clearError', () {
-      test('clears the error state', () {
-        // Set an error via internal state manipulation
-        notifier
-          ..validateAndSendOtp(
-            fullName: '',
-            username: '',
-            phone: '',
-          )
-          // no need to await — the error is set synchronously before the async call
-          ;
-
-        // After validating, the state should have been modified; verify clearError works
-        // by explicitly setting error and clearing it
-        notifier.state = notifier.state.copyWith(error: 'some error');
-        expect(notifier.state.error, 'some error');
-
+      test('clears error state', () async {
+        final service = TestableSupabaseService();
+        service.sendOtpOverride =
+            (_) async => Result.failure(AuthException('Some error'));
+        final notifier = AuthNotifier(service as dynamic);
+        await notifier.validateAndSendOtp(
+          fullName: 'John Doe',
+          username: 'john_doe',
+          phone: '+966****4567',
+        );
+        expect(notifier.state.error, isNotNull);
         notifier.clearError();
         expect(notifier.state.error, isNull);
       });

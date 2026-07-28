@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import '../core/result.dart';
 import '../core/logger.dart';
@@ -5,7 +6,10 @@ import '../core/config.dart';
 import 'models.dart';
 
 /// Singleton service wrapping Supabase client.
-final class SupabaseService {
+class SupabaseService {
+  @visibleForTesting
+  SupabaseService.test() : _initialized = true;
+
   SupabaseService._();
   static final SupabaseService _instance = SupabaseService._();
   factory SupabaseService() => _instance;

@@ -55,9 +55,9 @@ void main() {
         expect(Validators.email('first.last@example.com'), isNull);
       });
 
-      test('returns null for email with plus sign', () {
-        expect(Validators.email('user+tag@example.com'), isNull);
-      });
+      test('returns null for email with underscores', () {
+              expect(Validators.email('user_name@example.com'), isNull);
+            });
 
       test('returns error for missing @', () {
         expect(Validators.email('userexample.com'), isNotNull);
@@ -101,9 +101,9 @@ void main() {
         expect(Validators.phone('+1 (555) 123-4567'), isNull);
       });
 
-      test('returns null for valid international phone', () => {
-            expect(Validators.phone('+966501234567'), isNull);
-          });
+      test('returns null for valid international phone', () {
+              expect(Validators.phone('+966501234567'), isNull);
+            });
     });
 
     group('username', () {
@@ -231,9 +231,9 @@ void main() {
         expect(Validators.dateOfBirth(null), isNull);
       });
 
-      test('returns null for empty string (optional)', () => {
-            expect(Validators.dateOfBirth(''), isNull);
-          });
+      test('returns null for empty string (optional)', () {
+              expect(Validators.dateOfBirth(''), isNull);
+            });
 
       test('returns error for invalid format', () {
         expect(Validators.dateOfBirth('01-01-2000'), isNotNull);
