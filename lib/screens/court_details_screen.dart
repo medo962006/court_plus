@@ -768,7 +768,7 @@ class _SpecsTab extends StatelessWidget {
           label: 'Balls',
           value: '3 cans included',
         ),
-        const _SpecRow(icon: Ph.racket, label: 'Rackets', value: '2 available'),
+        const _SpecRow(icon: Ph.tennis_ball, label: 'Rackets', value: '2 available'),
         const _SpecRow(icon: Ph.drop, label: 'Water', value: 'Complimentary'),
       ],
     );

@@ -812,7 +812,7 @@ class _CourtFeedCard extends StatelessWidget {
                       color: AppColors.lightField,
                       child: Center(
                         child: Iconify(
-                          Ph.image_slash,
+                          Ph.image,
                           size: 40,
                           color: AppColors.lightMuted,
                         ),
