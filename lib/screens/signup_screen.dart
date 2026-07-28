@@ -29,15 +29,18 @@ class SignUpScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              const _FieldLabel('Full name'),
-              const _DarkField(hint: 'Enter your full name'),
-              const SizedBox(height: 16),
-              const _FieldLabel('Username'),
-              // Inline error state demo
-              const _DarkField(
-                hint: 'username',
-                errorText: 'User name must be unique',
-              ),
+                            const _FieldLabel('Full name'),
+                            const _DarkField(hint: 'Enter your full name'),
+                            const SizedBox(height: 16),
+                            const _FieldLabel('Email'),
+                            const _DarkField(hint: 'Enter your email'),
+                            const SizedBox(height: 16),
+                            const _FieldLabel('Username'),
+                            // Inline error state demo
+                            const _DarkField(
+                              hint: 'username',
+                              errorText: 'User name must be unique',
+                            ),
               const SizedBox(height: 16),
               const _FieldLabel('Phone number'),
               const _PhoneField(),

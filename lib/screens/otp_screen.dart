@@ -28,7 +28,6 @@ class _OtpScreenState extends State<OtpScreen> {
   void initState() {
     super.initState();
     _startResendTimer();
-    // Rebuild on focus changes so box fills update
     for (final f in _focusNodes) {
       f.addListener(() => setState(() {}));
     }
@@ -78,7 +77,6 @@ class _OtpScreenState extends State<OtpScreen> {
       backgroundColor: kBackground,
       body: Stack(
         children: [
-          // ── Background hero image bleeding into the screen bg ──
           Positioned(
             top: 0,
             left: 0,
@@ -99,7 +97,6 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
             ),
           ),
-          // Gradient overlay: transparent → background color
           Positioned(
             top: 0,
             left: 0,
@@ -122,12 +119,10 @@ class _OtpScreenState extends State<OtpScreen> {
               ),
             ),
           ),
-          // ── Foreground content ──
           SafeArea(
             child: Column(
               children: [
                 const SizedBox(height: 12),
-                // Transparent logo over the image — no container/borders
                 const Center(child: CourtPlusLogo(height: 34)),
                 const Spacer(),
                 Padding(
@@ -135,7 +130,6 @@ class _OtpScreenState extends State<OtpScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Heading — left aligned
                       const Text(
                         'Input OTP for Account to\nSign up',
                         textAlign: TextAlign.left,
@@ -147,7 +141,6 @@ class _OtpScreenState extends State<OtpScreen> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Subtitle — left aligned, muted
                       RichText(
                         textAlign: TextAlign.left,
                         text: const TextSpan(
@@ -162,7 +155,7 @@ class _OtpScreenState extends State<OtpScreen> {
                                   'Court+ just sent you a 6-Digit Code to ',
                             ),
                             TextSpan(
-                              text: '+201018088964',
+                              text: '+201****8964',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -176,7 +169,6 @@ class _OtpScreenState extends State<OtpScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
-                      // ── OTP boxes ──
                       Row(
                         children: List.generate(6, (index) {
                           return Expanded(
@@ -189,7 +181,6 @@ class _OtpScreenState extends State<OtpScreen> {
                         }),
                       ),
                       const SizedBox(height: 28),
-                      // ── Sign up (primary) button ──
                       SizedBox(
                         width: double.infinity,
                         height: 54,
@@ -214,7 +205,6 @@ class _OtpScreenState extends State<OtpScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      // ── Resend (secondary) button ──
                       SizedBox(
                         width: double.infinity,
                         height: 54,
@@ -248,23 +238,16 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                 ),
                 const Spacer(),
-                // ── Footer ──
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        "Don't have any account? ",
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 14,
-                        ),
-                      ),
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () => Navigator.of(context)
+                            .pushReplacementNamed(Routes.signup),
                         child: const Text(
-                          'Sign Up',
+                          "Didn't receive code? Resend",
                           style: TextStyle(
                             color: kNeonGreen,
                             fontSize: 14,

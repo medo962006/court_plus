@@ -27,6 +27,7 @@ import '../screens/activity_screen.dart';
 import '../screens/add_review_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/search_results_screen.dart';
+import '../screens/recent_search_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/update_profile_screen.dart';
 import '../screens/settings_screen.dart';
@@ -62,6 +63,7 @@ class Routes {
   static const addReview = '/add-review';
   static const explore = '/explore';
   static const searchResults = '/search-results';
+  static const recentSearch = '/recent-search';
   static const profile = '/profile';
   static const updateProfile = '/update-profile';
   static const settings = '/settings';
@@ -97,6 +99,7 @@ class Routes {
         addReview: (_) => const AddReviewScreen(),
         explore: (_) => const ExploreScreen(),
         searchResults: (_) => const SearchResultsScreen(),
+        recentSearch: (_) => const RecentSearchScreen(),
         profile: (_) => const ProfileScreen(),
         updateProfile: (_) => const UpdateProfileScreen(),
         settings: (_) => const SettingsScreen(),

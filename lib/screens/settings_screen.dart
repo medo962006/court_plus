@@ -3,6 +3,7 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
+import '../widgets/country_flag.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,79 +18,282 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightBg,
+      backgroundColor: AppColors.lightSurface,
       appBar: AppBar(
         backgroundColor: AppColors.lightBg,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Iconify(Ph.arrow_left, size: 22),
+          color: AppColors.lightText,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Settings',
-            style: TextStyle(
-                color: AppColors.lightText,
-                fontSize: 17,
-                fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Settings and activity',
+          style: TextStyle(
+            color: AppColors.lightText,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          const _SettingsTile(
-            icon: Ph.user_circle,
-            title: 'Account',
-          ),
-          const _SettingsTile(
-            icon: Ph.translate,
-            title: 'Language',
-            trailing: 'English',
-          ),
-          _SettingsSwitchTile(
-            icon: Ph.bell,
-            title: 'Notifications',
-            value: _notificationsEnabled,
-            onChanged: (val) =>
-                setState(() => _notificationsEnabled = val),
-          ),
-          const _SettingsTile(
-            icon: Ph.credit_card,
-            title: 'Payment methods',
-          ),
-          const _SettingsTile(
-            icon: Ph.lock_simple,
-            title: 'Privacy',
-          ),
-          const _SettingsTile(
-            icon: Ph.info,
-            title: 'About',
-          ),
-          const SizedBox(height: 16),
-          // ── Logout ──
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.lightBorder),
-            ),
+          // ── Saved Card ──
+          _SettingsCard(
             child: ListTile(
-              leading: const Iconify(Ph.sign_out,
-                  size: 22, color: AppColors.error),
-              title: const Text('Logout',
-                  style: TextStyle(
-                      color: AppColors.error,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600)),
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightField,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Iconify(Ph.bookmark_simple,
+                    size: 20, color: AppColors.lightText),
+              ),
+              title: const Text(
+                'Saved',
+                style: TextStyle(
+                  color: AppColors.lightText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              trailing: const Iconify(Ph.caret_right,
+                  size: 16, color: AppColors.lightMuted),
+              onTap: () {},
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // ── Settings Section Header ──
+          const Padding(
+            padding: EdgeInsets.only(left: 4, top: 8, bottom: 12),
+            child: Text(
+              'Settings',
+              style: TextStyle(
+                color: AppColors.lightMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+
+          // ── Notifications ──
+          _SettingsCard(
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightField,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Iconify(Ph.bell,
+                    size: 20, color: AppColors.lightText),
+              ),
+              title: const Text(
+                'Notifications',
+                style: TextStyle(
+                  color: AppColors.lightText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: Switch(
+                value: _notificationsEnabled,
+                onChanged: (val) =>
+                    setState(() => _notificationsEnabled = val),
+                activeThumbColor: AppColors.neonGreen,
+                activeTrackColor: AppColors.neonGreen.withValues(alpha: 0.4),
+                inactiveThumbColor: AppColors.lightMuted,
+                inactiveTrackColor: AppColors.lightField,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+
+          // ── Language ──
+          _SettingsCard(
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightField,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Iconify(Ph.globe,
+                    size: 20, color: AppColors.lightText),
+              ),
+              title: const Text(
+                'Language',
+                style: TextStyle(
+                  color: AppColors.lightText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CountryFlag(code: 'gb', width: 20),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'English',
+                    style: TextStyle(
+                      color: AppColors.lightMuted,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Iconify(Ph.caret_right,
+                      size: 16, color: AppColors.lightMuted),
+                ],
+              ),
+              onTap: () => Navigator.of(context).pushNamed(Routes.language),
+            ),
+          ),
+          const SizedBox(height: 2),
+
+          // ── How Court+ work ──
+          _SettingsCard(
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightField,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Iconify(Ph.question,
+                    size: 20, color: AppColors.lightText),
+              ),
+              title: const Text(
+                'How Court+ work',
+                style: TextStyle(
+                  color: AppColors.lightText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Iconify(Ph.caret_right,
+                  size: 16, color: AppColors.lightMuted),
+              onTap: () {},
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Legal Information Section Header ──
+          const Padding(
+            padding: EdgeInsets.only(left: 4, top: 8, bottom: 12),
+            child: Text(
+              'Legal information',
+              style: TextStyle(
+                color: AppColors.lightMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+
+          // ── Terms of use ──
+          _SettingsCard(
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightField,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Iconify(Ph.file_text,
+                    size: 20, color: AppColors.lightText),
+              ),
+              title: const Text(
+                'Terms of use',
+                style: TextStyle(
+                  color: AppColors.lightText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Iconify(Ph.caret_right,
+                  size: 16, color: AppColors.lightMuted),
+              onTap: () {},
+            ),
+          ),
+          const SizedBox(height: 2),
+
+          // ── Privacy policy ──
+          _SettingsCard(
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightField,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Iconify(Ph.eye,
+                    size: 20, color: AppColors.lightText),
+              ),
+              title: const Text(
+                'Privacy policy',
+                style: TextStyle(
+                  color: AppColors.lightText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Iconify(Ph.caret_right,
+                  size: 16, color: AppColors.lightMuted),
+              onTap: () {},
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // ── Log out ──
+          _SettingsCard(
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightField,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Iconify(Ph.door,
+                    size: 20, color: AppColors.error),
+              ),
+              title: const Text(
+                'log out',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               trailing: const Iconify(Ph.caret_right,
                   size: 16, color: AppColors.lightMuted),
               onTap: () => _showLogoutDialog(context),
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+
           // ── App version ──
           Center(
-            child: Text('Version 1.0.0',
-                style: TextStyle(
-                    color: AppColors.lightMuted, fontSize: 12)),
+            child: Text(
+              'Version 1.0.0',
+              style: TextStyle(
+                color: AppColors.lightMuted.withValues(alpha: 0.6),
+                fontSize: 12,
+              ),
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -104,15 +308,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        title: const Text('Logout',
-            style: TextStyle(color: AppColors.lightText)),
-        content: const Text('Are you sure you want to logout?',
-            style: TextStyle(color: AppColors.lightMuted)),
+        title: const Text(
+          'Logout',
+          style: TextStyle(color: AppColors.lightText),
+        ),
+        content: const Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: AppColors.lightMuted),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppColors.lightMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.lightMuted),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -120,10 +330,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.of(context)
                   .pushNamedAndRemoveUntil(Routes.login, (_) => false);
             },
-            child: const Text('Logout',
-                style: TextStyle(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Logout',
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -131,91 +344,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  final String icon, title;
-  final String? trailing;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    this.trailing,
-  });
+class _SettingsCard extends StatelessWidget {
+  final Widget child;
+
+  const _SettingsCard({required this.child});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 2),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.lightBorder),
       ),
-      child: ListTile(
-        leading: Iconify(icon, size: 22, color: AppColors.lightText),
-        title: Text(title,
-            style: const TextStyle(
-                color: AppColors.lightText,
-                fontSize: 15,
-                fontWeight: FontWeight.w500)),
-        trailing: trailing != null
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(trailing!,
-                      style: const TextStyle(
-                          color: AppColors.lightMuted, fontSize: 14)),
-                  const SizedBox(width: 6),
-                  const Iconify(Ph.caret_right,
-                      size: 16, color: AppColors.lightMuted),
-                ],
-              )
-            : const Iconify(Ph.caret_right,
-                size: 16, color: AppColors.lightMuted),
-        onTap: () {
-          if (title == 'Language') {
-            Navigator.of(context).pushNamed(Routes.language);
-          }
-        },
-      ),
-    );
-  }
-}
-
-class _SettingsSwitchTile extends StatelessWidget {
-  final String icon, title;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _SettingsSwitchTile({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 2),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.lightBorder),
-      ),
-      child: ListTile(
-        leading: Iconify(icon, size: 22, color: AppColors.lightText),
-        title: Text(title,
-            style: const TextStyle(
-                color: AppColors.lightText,
-                fontSize: 15,
-                fontWeight: FontWeight.w500)),
-        trailing: Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: AppColors.neonGreen,
-          activeTrackColor: AppColors.neonGreen.withValues(alpha: 0.4),
-        ),
-      ),
+      child: child,
     );
   }
 }

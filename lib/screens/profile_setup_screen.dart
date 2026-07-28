@@ -30,6 +30,75 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     Navigator.of(context).pushReplacementNamed(Routes.home);
   }
 
+  void _showAddGameSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Add a Sport',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              const Text('Select your sport and skill level:',
+                  style: TextStyle(color: AppColors.lightMuted, fontSize: 14)),
+              const SizedBox(height: 16),
+              _sportOption('Tennis', Icons.sports_tennis),
+              _sportOption('Football', Icons.sports_soccer),
+              _sportOption('Basketball', Icons.sports_basketball),
+              _sportOption('Padel', Icons.sports_cricket),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.neonGreen,
+                    foregroundColor: AppColors.darkText,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Done', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sportOption(String name, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.lightField,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE1E4E8)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 22, color: AppColors.lightText),
+            const SizedBox(width: 12),
+            Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.lightText)),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: AppColors.lightMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,7 +224,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     const SizedBox(height: 16),
                     const _LightLabel('Sports level'),
                     OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _showAddGameSheet(context),
                       icon: const Icon(Icons.add,
                           color: AppColors.lightText, size: 20),
                       label: const Text(

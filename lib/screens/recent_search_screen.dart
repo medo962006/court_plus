@@ -4,14 +4,14 @@ import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
 
-class SearchResultsScreen extends StatefulWidget {
-  const SearchResultsScreen({super.key});
+class RecentSearchScreen extends StatefulWidget {
+  const RecentSearchScreen({super.key});
 
   @override
-  State<SearchResultsScreen> createState() => _SearchResultsScreenState();
+  State<RecentSearchScreen> createState() => _RecentSearchScreenState();
 }
 
-class _SearchResultsScreenState extends State<SearchResultsScreen> {
+class _RecentSearchScreenState extends State<RecentSearchScreen> {
   int _navIndex = 1;
   int _tabIndex = 0; // 0 = Courts, 1 = Coaches
   int _chipIndex = 0; // 0 = All courts, 1 = Tennis, 2 = Football
@@ -19,37 +19,32 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   static const _tabs = ['Courts', 'Coaches'];
   static const _chips = ['All courts', 'Tennis', 'Football'];
 
-  static const _courts = [
+  static const _recentItems = [
     (
-      'assets/images/court1.jpg',
       'Tennis Outdoor Court A',
       'Eagle Sport Center',
       '3km away',
       4.5
     ),
     (
-      'assets/images/court2.jpg',
       'Tennis Indoor Court B',
       'Riyadh Sports Hub',
       '5km away',
       4.8
     ),
     (
-      'assets/images/banner1.jpg',
       'Football Pitch 1',
       'Al Malaz Club',
       '2km away',
       4.2
     ),
     (
-      'assets/images/court1.jpg',
       'Basketball Court A',
       'North Arena',
       '1.8km away',
       4.6
     ),
     (
-      'assets/images/court2.jpg',
       'Padel Court 3',
       'Padel Zone',
       '4km away',
@@ -66,8 +61,8 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Iconify(Ph.arrow_left, size: 22, color: AppColors.lightText),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Iconify(Ph.chats_circle, size: 22, color: AppColors.lightText),
+          onPressed: () {},
         ),
         title: const Text('Explore',
             style: TextStyle(color: AppColors.lightText, fontSize: 17, fontWeight: FontWeight.w700)),
@@ -111,8 +106,8 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 children: [
                   Iconify(Ph.magnifying_glass, size: 20, color: AppColors.lightMuted),
                   SizedBox(width: 10),
-                  Text('Alahly',
-                      style: TextStyle(color: AppColors.lightText, fontSize: 14, fontWeight: FontWeight.w500)),
+                  Text('Find a courts, coaches + more',
+                      style: TextStyle(color: AppColors.lightMuted, fontSize: 14)),
                 ],
               ),
             ),
@@ -186,15 +181,18 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // ── Results count + filter icon ──
+          // ── Recent section header ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                const Text('24 results found',
-                    style: TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+                const Text('Recent',
+                    style: TextStyle(
+                        color: AppColors.lightText,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700)),
                 const Spacer(),
                 IconButton(
                   onPressed: () {},
@@ -207,21 +205,20 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           ),
           const SizedBox(height: 8),
 
-          // ── Results list ──
+          // ── Recent list items ──
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              itemCount: _courts.length,
-              separatorBuilder: (context, i) => const SizedBox(height: 16),
+              itemCount: _recentItems.length,
+              separatorBuilder: (context, i) => const SizedBox(height: 2),
               itemBuilder: (context, i) {
-                final c = _courts[i];
-                return _SearchResultCard(
-                  image: c.$1,
-                  title: c.$2,
-                  center: c.$3,
-                  distance: c.$4,
-                  rating: c.$5,
-                  onTap: () => Navigator.of(context).pushNamed(Routes.courtDetails),
+                final item = _recentItems[i];
+                return _RecentSearchItem(
+                  title: item.$1,
+                  center: item.$2,
+                  distance: item.$3,
+                  rating: item.$4,
+                  onTap: () => Navigator.of(context).pushNamed(Routes.searchResults),
                 );
               },
             ),
@@ -242,13 +239,12 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   }
 }
 
-class _SearchResultCard extends StatelessWidget {
-  final String image, title, center, distance;
+class _RecentSearchItem extends StatelessWidget {
+  final String title, center, distance;
   final double rating;
   final VoidCallback onTap;
 
-  const _SearchResultCard({
-    required this.image,
+  const _RecentSearchItem({
     required this.title,
     required this.center,
     required this.distance,
@@ -261,84 +257,64 @@ class _SearchResultCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.lightBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
           children: [
-            // ── Image with bookmark overlay ──
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.asset(image,
-                      width: double.infinity, height: 160, fit: BoxFit.cover),
-                ),
-                Positioned(
-                  right: 10,
-                  bottom: 10,
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Iconify(Ph.bookmark_simple_fill,
-                          size: 18, color: AppColors.lightText),
-                    ),
-                  ),
-                ),
-              ],
+            // Clock history icon
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.lightField,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: Iconify(Ph.clock_counter_clockwise,
+                    size: 18, color: AppColors.lightMuted),
+              ),
             ),
-            // ── Details ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            const SizedBox(width: 12),
+            // Details
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
                       style: const TextStyle(
                           color: AppColors.lightText,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700)),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Iconify(Ph.star_fill, size: 14, color: Color(0xFFFFB800)),
-                      const SizedBox(width: 4),
-                      Text('$rating',
-                          style: const TextStyle(
-                              color: AppColors.lightText,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Iconify(Ph.map_pin, size: 14, color: AppColors.lightMuted),
+                      const Iconify(Ph.map_pin, size: 12, color: AppColors.lightMuted),
                       const SizedBox(width: 4),
                       Text(center,
-                          style: const TextStyle(color: AppColors.lightMuted, fontSize: 13)),
-                      const Spacer(),
-                      Text(distance,
                           style: const TextStyle(color: AppColors.lightMuted, fontSize: 12)),
                     ],
                   ),
                 ],
               ),
+            ),
+            // Rating and distance
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  children: [
+                    const Iconify(Ph.star_fill, size: 12, color: Color(0xFFFFB800)),
+                    const SizedBox(width: 2),
+                    Text('$rating',
+                        style: const TextStyle(
+                            color: AppColors.lightText,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(distance,
+                    style: const TextStyle(color: AppColors.lightMuted, fontSize: 11)),
+              ],
             ),
           ],
         ),
