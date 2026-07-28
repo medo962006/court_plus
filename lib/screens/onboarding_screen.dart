@@ -82,6 +82,24 @@ class OnboardingScreen extends StatelessWidget {
                         Navigator.of(context).pushNamed(Routes.signup),
                     child: const Text('Get Started'),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context)
+                          .pushNamed(Routes.home),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(54),
+                        side: const BorderSide(color: AppColors.darkBorder),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Continue as Guest',
+                          style: TextStyle(
+                              color: AppColors.white60,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),

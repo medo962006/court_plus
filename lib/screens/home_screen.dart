@@ -263,6 +263,12 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (i) {
           if (i == 0) {
             Navigator.of(context).pushNamed(Routes.courts);
+          } else if (i == 1) {
+            Navigator.of(context).pushNamed(Routes.explore);
+          } else if (i == 3) {
+            Navigator.of(context).pushNamed(Routes.activity);
+          } else if (i == 4) {
+            Navigator.of(context).pushNamed(Routes.profile);
           } else {
             setState(() => _navIndex = i);
           }
