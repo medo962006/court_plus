@@ -3,6 +3,8 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../routes.dart';
 import '../theme/app_theme.dart';
+import '../services/models.dart';
+import '../services/mock_data_service.dart';
 
 class BookingStep2Screen extends StatefulWidget {
   const BookingStep2Screen({super.key});
@@ -13,15 +15,29 @@ class BookingStep2Screen extends StatefulWidget {
 
 class _BookingStep2ScreenState extends State<BookingStep2Screen> {
   int _selectedDuration = 1; // index
+  Court? _court;
+
   static const _durations = [
     ('30 mins', 0.5),
     ('1 hour', 1.0),
     ('1.5 hours', 1.5),
     ('2 hours', 2.0),
   ];
-  static const _hourlyRate = 100;
+
+  double get _hourlyRate => _court?.pricePerHour ?? 100;
 
   double get _totalPrice => _hourlyRate * _durations[_selectedDuration].$2;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_court == null) {
+      final courtId = ModalRoute.of(context)?.settings.arguments as String?;
+      if (courtId != null) {
+        _court = MockDataService.getCourtById(courtId);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,12 +56,35 @@ class _BookingStep2ScreenState extends State<BookingStep2Screen> {
       ),
       body: Column(
         children: [
+          // Step indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              children: [
+                _stepDot('1', true),
+                _stepLine(true),
+                _stepDot('2', true),
+                _stepLine(false),
+                _stepDot('3', false),
+                _stepLine(false),
+                _stepDot('4', false),
+              ],
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (_court != null) ...[
+                    Text(_court!.name,
+                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(_court!.center,
+                        style: const TextStyle(color: AppColors.white60, fontSize: 14)),
+                  ],
+                  const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -59,11 +98,11 @@ class _BookingStep2ScreenState extends State<BookingStep2Screen> {
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text('Rate per hour',
+                          children: [
+                            const Text('Rate per hour',
                                 style: TextStyle(color: AppColors.white60, fontSize: 13)),
-                            Text('SR 100',
-                                style: TextStyle(
+                            Text('SR ${_hourlyRate.toInt()}',
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -76,6 +115,7 @@ class _BookingStep2ScreenState extends State<BookingStep2Screen> {
                   const SizedBox(height: 12),
                   ...List.generate(_durations.length, (i) {
                     final active = _selectedDuration == i;
+                    final price = (_hourlyRate * _durations[i].$2).toInt();
                     return GestureDetector(
                       onTap: () => setState(() => _selectedDuration = i),
                       child: Container(
@@ -98,7 +138,7 @@ class _BookingStep2ScreenState extends State<BookingStep2Screen> {
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600)),
                             ),
-                            Text('SR ${(_hourlyRate * _durations[i].$2).toInt()}',
+                            Text('SR $price',
                                 style: TextStyle(
                                     color: active ? AppColors.neonGreen : AppColors.white60,
                                     fontSize: 15,
@@ -144,13 +184,56 @@ class _BookingStep2ScreenState extends State<BookingStep2Screen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pushNamed(Routes.bookingStep3),
+                  onPressed: () {
+                    final courtId = ModalRoute.of(context)?.settings.arguments as String?;
+                    Navigator.of(context).pushNamed(
+                      Routes.bookingStep3,
+                      arguments: {
+                        'courtId': courtId,
+                        'durationIndex': _selectedDuration,
+                        'durationLabel': _durations[_selectedDuration].$1,
+                        'durationHours': _durations[_selectedDuration].$2,
+                        'courtFee': _totalPrice,
+                      },
+                    );
+                  },
                   child: const Text('Next'),
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _stepDot(String label, bool active) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: active ? AppColors.neonGreen : AppColors.darkBorder,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? AppColors.darkText : AppColors.white60,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _stepLine(bool active) {
+    return Expanded(
+      child: Container(
+        height: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        color: active ? AppColors.neonGreen : AppColors.darkBorder,
       ),
     );
   }

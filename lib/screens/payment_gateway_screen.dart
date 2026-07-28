@@ -14,12 +14,25 @@ class PaymentGatewayScreen extends StatefulWidget {
 class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
   int _selectedMethod = 0;
 
+  // Credit card fields
+  final _cardNumberCtrl = TextEditingController();
+  final _expiryCtrl = TextEditingController();
+  final _cvvCtrl = TextEditingController();
+
   static const _methods = <_PaymentMethod>[
     _PaymentMethod(Ph.apple_logo, 'Apple Pay'),
     _PaymentMethod(Ph.google_logo, 'Google Pay'),
     _PaymentMethod(Ph.credit_card, 'Credit Card'),
-    _PaymentMethod(Ph.wallet, 'STC Pay'),
+    _PaymentMethod(Ph.device_mobile, 'STC Pay'),
   ];
+
+  @override
+  void dispose() {
+    _cardNumberCtrl.dispose();
+    _expiryCtrl.dispose();
+    _cvvCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,11 +83,11 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        _orderRow('Court Booking', 'SR 150'),
+                        _summaryRow('Court', 'Grand Slam Court — Court A'),
                         const SizedBox(height: 10),
-                        _orderRow('Racket Rental', 'SR 25'),
+                        _summaryRow('Date', 'Sat, 15 Nov 2025'),
                         const SizedBox(height: 10),
-                        _orderRow('Bottled Water (x2)', 'SR 10'),
+                        _summaryRow('Time', '10:00 — 11:00 AM'),
                         const SizedBox(height: 12),
                         const Divider(color: AppColors.lightBorder, height: 1),
                         const SizedBox(height: 12),
@@ -184,7 +197,68 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
                       ),
                     );
                   }),
-                  const SizedBox(height: 8),
+                  // ── Credit card form (shown only when Credit Card selected) ──
+                  if (_selectedMethod == 2) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightSurface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.lightBorder),
+                      ),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _cardNumberCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Card Number',
+                              hintText: '1234 5678 9012 3456',
+                              prefixIcon: Iconify(Ph.credit_card, size: 20),
+                              border: OutlineInputBorder(),
+                              filled: true,
+                              fillColor: AppColors.lightBg,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _expiryCtrl,
+                                  keyboardType: TextInputType.datetime,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Expiry',
+                                    hintText: 'MM/YY',
+                                    border: OutlineInputBorder(),
+                                    filled: true,
+                                    fillColor: AppColors.lightBg,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: _cvvCtrl,
+                                  keyboardType: TextInputType.number,
+                                  obscureText: true,
+                                  decoration: const InputDecoration(
+                                    labelText: 'CVV',
+                                    hintText: '123',
+                                    border: OutlineInputBorder(),
+                                    filled: true,
+                                    fillColor: AppColors.lightBg,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
                   // ── Secure payment notice ──
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -217,8 +291,8 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed(Routes.bookingSuccess),
+                onPressed: () => Navigator.of(context)
+                    .pushReplacementNamed(Routes.bookingSuccess),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.neonGreen,
                   foregroundColor: AppColors.darkText,
@@ -241,7 +315,7 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
     );
   }
 
-  Widget _orderRow(String label, String amount) {
+  Widget _summaryRow(String label, String value) {
     return Row(
       children: [
         Expanded(
@@ -254,7 +328,7 @@ class _PaymentGatewayScreenState extends State<PaymentGatewayScreen> {
           ),
         ),
         Text(
-          amount,
+          value,
           style: const TextStyle(
             color: AppColors.lightText,
             fontSize: 14,

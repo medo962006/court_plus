@@ -12,39 +12,37 @@ class BookingStep3Screen extends StatefulWidget {
 }
 
 class _BookingStep3ScreenState extends State<BookingStep3Screen> {
+  static const _items = <_AddonItem>[
+    _AddonItem('Racket Rental', Ph.tennis_ball, 20),
+    _AddonItem('Ball Pack', Ph.dribbble_logo_fill, 15),
+    _AddonItem('Water Bottle', Ph.drop_fill, 5),
+    _AddonItem('Towel', Ph.t_shirt_fill, 10),
+    _AddonItem('Wristband', Ph.clock_fill, 8),
+  ];
+
   final Map<String, int> _quantities = {
-    'Racket Rental': 0,
-    'Ball Pack': 0,
-    'Water Bottle': 0,
-  };
-
-  static const _prices = {
-    'Racket Rental': 20,
-    'Ball Pack': 15,
-    'Water Bottle': 5,
-  };
-
-  static const _icons = {
-    'Racket Rental': Ph.tennis_ball,
-    'Ball Pack': Ph.dribbble_logo_fill,
-    'Water Bottle': Ph.drop_fill,
+    for (final item in _items) item.name: 0,
   };
 
   int get _subtotal {
     int total = 0;
-    _quantities.forEach((key, value) => total += value * (_prices[key] ?? 0));
+    for (final item in _items) {
+      total += (_quantities[item.name] ?? 0) * item.price;
+    }
     return total;
   }
 
   void _updateQty(String key, int delta) {
     setState(() {
-      _quantities[key] = (_quantities[key] ?? 0) + delta;
-      if (_quantities[key]! < 0) _quantities[key] = 0;
+      final current = _quantities[key] ?? 0;
+      _quantities[key] = (current + delta).clamp(0, 99);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
     return Scaffold(
       backgroundColor: AppColors.darkBg,
       appBar: AppBar(
@@ -60,6 +58,21 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
       ),
       body: Column(
         children: [
+          // Step indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              children: [
+                _stepDot('1', true),
+                _stepLine(true),
+                _stepDot('2', true),
+                _stepLine(true),
+                _stepDot('3', true),
+                _stepLine(false),
+                _stepDot('4', false),
+              ],
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -69,7 +82,7 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                   const Text('Extras & Equipment',
                       style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 16),
-                  ..._quantities.keys.map((key) => Container(
+                  ..._items.map((item) => Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -80,13 +93,14 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                     child: Row(
                       children: [
                         Container(
-                          width: 44, height: 44,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
                             color: AppColors.darkSlate,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Center(
-                            child: Iconify(_icons[key]!, size: 22, color: AppColors.neonGreen),
+                            child: Iconify(item.icon, size: 22, color: AppColors.neonGreen),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -94,40 +108,49 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(key, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                              Text('SR ${_prices[key]}', style: const TextStyle(color: AppColors.white60, fontSize: 13)),
+                              Text(item.name,
+                                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                              Text('SR ${item.price}/unit',
+                                  style: const TextStyle(color: AppColors.white60, fontSize: 13)),
                             ],
                           ),
                         ),
                         Row(
                           children: [
                             GestureDetector(
-                              onTap: () => _updateQty(key, -1),
+                              onTap: () => _updateQty(item.name, -1),
                               child: Container(
-                                width: 32, height: 32,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
-                                  color: _quantities[key]! > 0 ? AppColors.neonGreen : AppColors.darkBorder,
+                                  color: (_quantities[item.name] ?? 0) > 0
+                                      ? AppColors.neonGreen
+                                      : AppColors.darkBorder,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Center(child: Icon(Icons.remove, size: 16, color: Colors.black)),
+                                child: const Center(
+                                    child: Icon(Icons.remove, size: 16, color: Colors.black)),
                               ),
                             ),
                             SizedBox(
                               width: 36,
                               child: Center(
-                                child: Text('${_quantities[key]}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                                child: Text('${_quantities[item.name]}',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => _updateQty(key, 1),
+                              onTap: () => _updateQty(item.name, 1),
                               child: Container(
-                                width: 32, height: 32,
+                                width: 32,
+                                height: 32,
                                 decoration: BoxDecoration(
                                   color: AppColors.neonGreen,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Center(child: Icon(Icons.add, size: 16, color: Colors.black)),
+                                child: const Center(
+                                    child: Icon(Icons.add, size: 16, color: Colors.black)),
                               ),
                             ),
                           ],
@@ -167,7 +190,16 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pushNamed(Routes.bookingStep4),
+                  onPressed: () {
+                    Navigator.of(context).pushNamed(
+                      Routes.bookingStep4,
+                      arguments: {
+                        ...?args,
+                        'quantities': Map<String, int>.from(_quantities),
+                        'addonsSubtotal': _subtotal,
+                      },
+                    );
+                  },
                   child: const Text('Next'),
                 ),
               ),
@@ -177,4 +209,42 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
       ),
     );
   }
+
+  Widget _stepDot(String label, bool active) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: active ? AppColors.neonGreen : AppColors.darkBorder,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? AppColors.darkText : AppColors.white60,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _stepLine(bool active) {
+    return Expanded(
+      child: Container(
+        height: 2,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        color: active ? AppColors.neonGreen : AppColors.darkBorder,
+      ),
+    );
+  }
+}
+
+class _AddonItem {
+  final String name;
+  final String icon;
+  final int price;
+  const _AddonItem(this.name, this.icon, this.price);
 }

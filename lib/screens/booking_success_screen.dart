@@ -157,15 +157,21 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                           ),
                           const SizedBox(height: 16),
                           _detailRow(
-                              Ph.tennis_ball, 'Court', 'Grand Slam Court'),
+                              Ph.identification_card, 'Booking ID', '#BK-2025-0042'),
+                          const SizedBox(height: 12),
+                          _detailRow(
+                              Ph.tennis_ball, 'Court', 'Grand Slam Court — Court A'),
                           const SizedBox(height: 12),
                           _detailRow(Ph.calendar, 'Date', 'Sat, 15 Nov 2025'),
                           const SizedBox(height: 12),
                           _detailRow(
-                              Ph.clock, 'Time', '10:00 - 11:00 AM'),
+                              Ph.clock, 'Time', '10:00 — 11:00 AM'),
                           const SizedBox(height: 12),
                           _detailRow(
-                              Ph.identification_card, 'Booking ID', '#BK-2025-0042'),
+                              Ph.hourglass, 'Duration', '1 hour'),
+                          const SizedBox(height: 12),
+                          _detailRow(
+                              Ph.wallet, 'Payment Method', 'Apple Pay'),
                           const SizedBox(height: 12),
                           const Divider(color: AppColors.lightBorder, height: 1),
                           const SizedBox(height: 12),
@@ -179,7 +185,7 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                                 ),
                               ),
                               const Spacer(),
-                              Text(
+                              const Text(
                                 'SR 185',
                                 style: TextStyle(
                                   color: AppColors.lightText,

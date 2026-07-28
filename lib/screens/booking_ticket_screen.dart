@@ -3,9 +3,14 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 
-class BookingTicketScreen extends StatelessWidget {
+class BookingTicketScreen extends StatefulWidget {
   const BookingTicketScreen({super.key});
 
+  @override
+  State<BookingTicketScreen> createState() => _BookingTicketScreenState();
+}
+
+class _BookingTicketScreenState extends State<BookingTicketScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,8 +30,16 @@ class BookingTicketScreen extends StatelessWidget {
                 fontWeight: FontWeight.w700)),
         actions: [
           IconButton(
-            icon: const Iconify(Ph.share_network, size: 20),
-            onPressed: () {},
+            icon: const Iconify(Ph.share_fill, size: 20),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Share functionality coming soon'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -37,23 +50,36 @@ class BookingTicketScreen extends StatelessWidget {
             // ── Ticket card ──
             _TicketCard(),
             const SizedBox(height: 20),
-            // ── Action buttons ──
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionButton(
-                    icon: Ph.download_simple,
-                    label: 'Download',
+            // ── Add to Calendar button ──
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Added to calendar'),
+                      behavior: SnackBarBehavior.floating,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                icon: const Iconify(Ph.calendar_plus, size: 20),
+                label: const Text('Add to Calendar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.neonGreen,
+                  foregroundColor: AppColors.darkText,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: AppTheme.fontFamily,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ActionButton(
-                    icon: Ph.printer,
-                    label: 'Print',
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -126,8 +152,16 @@ class _TicketCard extends StatelessWidget {
                       color: AppColors.lightField,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.qr_code_rounded,
-                        color: AppColors.lightMuted, size: 60),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'QR',
+                      style: TextStyle(
+                        color: AppColors.lightMuted,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 4,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -183,7 +217,7 @@ class _TicketCard extends StatelessWidget {
                         style: TextStyle(
                             color: AppColors.lightMuted, fontSize: 13)),
                     const Spacer(),
-                    const Text('\$45.00',
+                    const Text('SR 185',
                         style: TextStyle(
                             color: AppColors.lightText,
                             fontSize: 16,
@@ -195,7 +229,8 @@ class _TicketCard extends StatelessWidget {
                 // Status badge
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE9F8E8),
                       borderRadius: BorderRadius.circular(20),
@@ -316,35 +351,6 @@ class _StubLabel extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w600)),
       ],
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final String icon, label;
-
-  const _ActionButton({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.darkSlate,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Iconify(icon, size: 18, color: AppColors.neonGreen),
-          const SizedBox(width: 8),
-          Text(label,
-              style: const TextStyle(
-                  color: AppColors.neonGreen,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700)),
-        ],
-      ),
     );
   }
 }
