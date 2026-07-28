@@ -3,3 +3,4 @@ library presentation_providers;
 export 'auth_provider.dart';
 export 'courts_provider.dart';
 export 'supabase_provider.dart';
+export 'match_provider.dart';

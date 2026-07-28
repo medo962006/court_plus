@@ -22,7 +22,6 @@ import '../screens/add_players_screen.dart';
 import '../screens/open_matches_screen.dart';
 import '../screens/match_filter_screen.dart';
 import '../screens/receive_invitation_screen.dart';
-import '../screens/invitation_details_screen.dart';
 import '../screens/activity_screen.dart';
 import '../screens/add_review_screen.dart';
 import '../screens/explore_screen.dart';
@@ -33,6 +32,8 @@ import '../screens/update_profile_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/activity_log_screen.dart';
 import '../screens/booking_ticket_screen.dart';
+import '../presentation/screens/match/create_match_screen.dart';
+import '../presentation/screens/match/invite_players_screen.dart';
 
 class Routes {
   static const splash = '/';
@@ -55,6 +56,7 @@ class Routes {
   static const bookingSuccess = '/booking-success';
   static const startMatch = '/start-match';
   static const addPlayers = '/add-players';
+  static const invitePlayers = '/invite-players';
   static const openMatches = '/open-matches';
   static const matchFilter = '/match-filter';
   static const receiveInvitation = '/receive-invitation';
@@ -69,49 +71,51 @@ class Routes {
   static const settings = '/settings';
   static const activityLog = '/activity-log';
   static const bookingTicket = '/booking-ticket';
+  static const createMatch = '/create-match';
 
   static Map<String, WidgetBuilder> get map => {
-        splash: (_) => const SplashScreen(),
-        language: (_) => const LanguageScreen(),
-        onboarding: (_) => const OnboardingScreen(),
-        signup: (_) => const SignUpScreen(),
-        login: (_) => const LoginScreen(),
-        otp: (_) => const OtpScreen(),
-        profileSetup: (_) => const ProfileSetupScreen(),
-        home: (_) => const HomeScreen(),
-        courts: (_) => const CourtsScreen(),
-        courtDetails: (_) => const CourtDetailsScreen(),
-        notifications: (_) => const NotificationsScreen(),
-        reviews: (_) => const ReviewsScreen(),
-        bookingStep1: (_) => const BookingStep1Screen(),
-        bookingStep2: (_) => const BookingStep2Screen(),
-        bookingStep3: (_) => const BookingStep3Screen(),
-        bookingStep4: (_) => const BookingStep4Screen(),
-        paymentGateway: (_) => const PaymentGatewayScreen(),
-        bookingSuccess: (_) => const BookingSuccessScreen(),
-        startMatch: (_) => const StartMatchScreen(),
-        addPlayers: (_) => const AddPlayersScreen(),
-        openMatches: (_) => const OpenMatchesScreen(),
-        matchFilter: (_) => const MatchFilterScreen(),
-        receiveInvitation: (_) => const ReceiveInvitationScreen(),
-        invitationDetails: (_) => const InvitationDetailsScreen(),
-        activity: (_) => const ActivityScreen(),
-        addReview: (_) => const AddReviewScreen(),
-        explore: (_) => const ExploreScreen(),
-        searchResults: (_) => const SearchResultsScreen(),
-        recentSearch: (_) => const RecentSearchScreen(),
-        profile: (_) => const ProfileScreen(),
-        updateProfile: (_) => const UpdateProfileScreen(),
-        settings: (_) => const SettingsScreen(),
-        activityLog: (_) => const ActivityLogScreen(),
-        bookingTicket: (_) => const BookingTicketScreen(),
-      };
+    splash: (_) => const SplashScreen(),
+    language: (_) => const LanguageScreen(),
+    onboarding: (_) => const OnboardingScreen(),
+    signup: (_) => const SignUpScreen(),
+    login: (_) => const LoginScreen(),
+    otp: (_) => const OtpScreen(),
+    profileSetup: (_) => const ProfileSetupScreen(),
+    home: (_) => const HomeScreen(),
+    courts: (_) => const CourtsScreen(),
+    courtDetails: (_) => const CourtDetailsScreen(),
+    notifications: (_) => const NotificationsScreen(),
+    reviews: (_) => const ReviewsScreen(),
+    bookingStep1: (_) => const BookingStep1Screen(),
+    bookingStep2: (_) => const BookingStep2Screen(),
+    bookingStep3: (_) => const BookingStep3Screen(),
+    bookingStep4: (_) => const BookingStep4Screen(),
+    paymentGateway: (_) => const PaymentGatewayScreen(),
+    bookingSuccess: (_) => const BookingSuccessScreen(),
+    startMatch: (_) => const StartMatchScreen(),
+    addPlayers: (_) => const AddPlayersScreen(),
+    openMatches: (_) => const OpenMatchesScreen(),
+    matchFilter: (_) => const MatchFilterScreen(),
+    receiveInvitation: (_) => const ReceiveInvitationScreen(),
+    activity: (_) => const ActivityScreen(),
+    addReview: (_) => const AddReviewScreen(),
+    explore: (_) => const ExploreScreen(),
+    searchResults: (_) => const SearchResultsScreen(),
+    recentSearch: (_) => const RecentSearchScreen(),
+    profile: (_) => const ProfileScreen(),
+    updateProfile: (_) => const UpdateProfileScreen(),
+    settings: (_) => const SettingsScreen(),
+    activityLog: (_) => const ActivityLogScreen(),
+    bookingTicket: (_) => const BookingTicketScreen(),
+    createMatch: (_) => const CreateMatchScreen(),
+    invitePlayers: (_) => const InvitePlayersScreen(),
+  };
 
   /// Smooth cross-fade transition used from splash.
   static Route<T> fade<T>(Widget page) => PageRouteBuilder<T>(
-        transitionDuration: const Duration(milliseconds: 600),
-        pageBuilder: (context, a1, a2) => page,
-        transitionsBuilder: (context, animation, a2, child) =>
-            FadeTransition(opacity: animation, child: child),
-      );
+    transitionDuration: const Duration(milliseconds: 600),
+    pageBuilder: (context, a1, a2) => page,
+    transitionsBuilder: (context, animation, a2, child) =>
+        FadeTransition(opacity: animation, child: child),
+  );
 }
