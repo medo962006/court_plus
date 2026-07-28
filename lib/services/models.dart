@@ -1,4 +1,7 @@
 // Backend models for court+ app.
+
+// ─── Supabase Config ───
+
 class SupabaseConfig {
   SupabaseConfig._();
 
@@ -10,10 +13,8 @@ class SupabaseConfig {
       anonKey != 'your-anon-key';
 }
 
-/// Supabase table names.
 class DbTables {
   DbTables._();
-
   static const String users = 'users';
   static const String courts = 'courts';
   static const String bookings = 'bookings';
@@ -22,21 +23,23 @@ class DbTables {
   static const String reviews = 'reviews';
   static const String moments = 'moments';
   static const String notifications = 'notifications';
+  static const String payments = 'payments';
 }
 
-/// Enum for match status.
-enum MatchStatus { upcoming, live, completed, cancelled }
+// ─── Enums ───
 
-/// Enum for booking status.
+enum MatchStatus { upcoming, live, completed, cancelled }
 enum BookingStatus { pending, confirmed, cancelled, completed }
 
-/// User profile model.
+// ─── Models ───
+
 class UserProfile {
   final String id;
   final String fullName;
   final String username;
   final String? bio;
   final String? phone;
+  final String? email;
   final String? avatarUrl;
   final String? headerUrl;
   final String? dateOfBirth;
@@ -44,6 +47,8 @@ class UserProfile {
   final int matchesCount;
   final int courtsCount;
   final int followersCount;
+  final int followingCount;
+  final String? createdAt;
 
   const UserProfile({
     required this.id,
@@ -51,6 +56,7 @@ class UserProfile {
     required this.username,
     this.bio,
     this.phone,
+    this.email,
     this.avatarUrl,
     this.headerUrl,
     this.dateOfBirth,
@@ -58,10 +64,29 @@ class UserProfile {
     this.matchesCount = 0,
     this.courtsCount = 0,
     this.followersCount = 0,
+    this.followingCount = 0,
+    this.createdAt,
   });
+
+  factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
+        id: map['id'] as String,
+        fullName: map['full_name'] as String? ?? '',
+        username: map['username'] as String? ?? '',
+        bio: map['bio'] as String?,
+        phone: map['phone'] as String?,
+        email: map['email'] as String?,
+        avatarUrl: map['avatar_url'] as String?,
+        headerUrl: map['header_url'] as String?,
+        dateOfBirth: map['date_of_birth'] as String?,
+        gender: map['gender'] as String?,
+        matchesCount: map['matches_count'] as int? ?? 0,
+        courtsCount: map['courts_count'] as int? ?? 0,
+        followersCount: map['followers_count'] as int? ?? 0,
+        followingCount: map['following_count'] as int? ?? 0,
+        createdAt: map['created_at'] as String?,
+      );
 }
 
-/// Court model.
 class Court {
   final String id;
   final String name;
@@ -92,9 +117,24 @@ class Court {
     this.latitude,
     this.longitude,
   });
+
+  factory Court.fromMap(Map<String, dynamic> map) => Court(
+        id: map['id'] as String,
+        name: map['name'] as String? ?? '',
+        center: map['center'] as String? ?? '',
+        sportType: map['sport_type'] as String? ?? '',
+        location: map['location'] as String? ?? '',
+        imageUrl: map['image_url'] as String?,
+        rating: (map['rating'] as num?)?.toDouble() ?? 0,
+        reviewsCount: map['reviews_count'] as int? ?? 0,
+        likesCount: map['likes_count'] as int? ?? 0,
+        pricePerHour: (map['price_per_hour'] as num?)?.toDouble() ?? 100,
+        distance: (map['distance'] as num?)?.toDouble() ?? 0,
+        latitude: (map['latitude'] as num?)?.toDouble(),
+        longitude: (map['longitude'] as num?)?.toDouble(),
+      );
 }
 
-/// Booking model.
 class Booking {
   final String id;
   final String userId;
@@ -123,9 +163,25 @@ class Booking {
     this.addOns = const [],
     this.createdAt = '',
   });
+
+  factory Booking.fromMap(Map<String, dynamic> map) => Booking(
+        id: map['id'] as String,
+        userId: map['user_id'] as String? ?? '',
+        courtId: map['court_id'] as String? ?? '',
+        courtName: map['court_name'] as String? ?? '',
+        date: map['date'] as String? ?? '',
+        timeSlot: map['time_slot'] as String? ?? '',
+        duration: (map['duration'] as num?)?.toDouble() ?? 0,
+        totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0,
+        status: BookingStatus.values.firstWhere(
+            (e) => e.name == map['status'],
+            orElse: () => BookingStatus.pending),
+        paymentMethod: map['payment_method'] as String?,
+        addOns: (map['add_ons'] as List?)?.cast<String>() ?? [],
+        createdAt: map['created_at'] as String? ?? '',
+      );
 }
 
-/// Match model.
 class Match {
   final String id;
   final String creatorId;
@@ -156,4 +212,22 @@ class Match {
     this.pricePerPerson = 25,
     this.status = MatchStatus.upcoming,
   });
+
+  factory Match.fromMap(Map<String, dynamic> map) => Match(
+        id: map['id'] as String,
+        creatorId: map['creator_id'] as String? ?? '',
+        courtId: map['court_id'] as String? ?? '',
+        courtName: map['court_name'] as String? ?? '',
+        date: map['date'] as String? ?? '',
+        timeSlot: map['time_slot'] as String? ?? '',
+        level: map['level'] as String? ?? 'beginner',
+        gender: map['gender'] as String? ?? 'any',
+        location: map['location'] as String? ?? '',
+        maxPlayers: map['max_players'] as int? ?? 4,
+        currentPlayers: map['current_players'] as int? ?? 1,
+        pricePerPerson: (map['price_per_person'] as num?)?.toDouble() ?? 25,
+        status: MatchStatus.values.firstWhere(
+            (e) => e.name == map['status'],
+            orElse: () => MatchStatus.upcoming),
+      );
 }

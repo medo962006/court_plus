@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'theme/app_theme.dart';
 import 'routes.dart';
+import 'core/logger.dart';
+import 'core/config.dart';
+import 'core/di.dart';
+import 'services/supabase_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
@@ -12,6 +16,13 @@ void main() {
       statusBarIconBrightness: Brightness.light,
     ),
   );
+
+  // Initialize infrastructure
+  AppLogger.init();
+  await AppConfig.init();
+  await setupDependencyInjection();
+  await SupabaseService().init();
+
   runApp(const CourtPlusApp());
 }
 
@@ -23,8 +34,6 @@ class CourtPlusApp extends StatelessWidget {
     return MaterialApp(
       title: 'court+',
       debugShowCheckedModeBanner: false,
-      // Dark theme is the app default (screens 1–5);
-      // light screens (6–7) set their own light backgrounds/scaffolds.
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.dark,
