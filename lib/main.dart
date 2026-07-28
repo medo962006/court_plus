@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/app_theme.dart';
 import 'routes.dart';
 import 'core/logger.dart';
@@ -23,7 +24,7 @@ void main() async {
   await setupDependencyInjection();
   await SupabaseService().init();
 
-  runApp(const CourtPlusApp());
+  runApp(const ProviderScope(child: CourtPlusApp()));
 }
 
 class CourtPlusApp extends StatelessWidget {
