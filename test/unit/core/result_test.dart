@@ -74,9 +74,9 @@ void main() {
       });
 
       test('Failure<T> preserves error type', () {
-        final result = Result.failure<int>(NetworkException('nope'));
-        expect(result.fold((v) => v, (e) => -1), -1);
-      });
+              final Result<int> result = Result.failure(NetworkException('nope'));
+              expect(result.fold((v) => v, (e) => -1), -1);
+            });
     });
   });
 
