@@ -3,6 +3,8 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../routes.dart';
 import '../theme/app_theme.dart';
+import '../services/models.dart';
+import '../services/mock_data_service.dart';
 
 class BookingStep1Screen extends StatefulWidget {
   const BookingStep1Screen({super.key});
@@ -14,12 +16,33 @@ class BookingStep1Screen extends StatefulWidget {
 class _BookingStep1ScreenState extends State<BookingStep1Screen> {
   int? _selectedDay;
   int? _selectedTime;
-  final List<String> _timeSlots = [
-    '06:00', '07:00', '08:00', '09:00', '10:00',
-    '11:00', '12:00', '13:00', '14:00', '15:00',
-    '16:00', '17:00', '18:00', '19:00', '20:00',
-  ];
-  static const _available = {2, 5, 8, 11, 14, 17, 20, 23, 26, 29};
+  String? _selectedTimeStr;
+  Court? _court;
+  List<String> _timeSlots = [];
+  Map<int, bool> _availableDays = {};
+  int _currentMonth = 4;
+  int _currentYear = 2024;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_court == null) {
+      final courtId = ModalRoute.of(context)?.settings.arguments as String?;
+      if (courtId != null) {
+        _court = MockDataService.getCourtById(courtId);
+      }
+      _availableDays = MockDataService.getAvailableDays(_currentYear, _currentMonth);
+      _timeSlots = MockDataService.getTimeSlots(DateTime(_currentYear, _currentMonth, DateTime.now().day));
+    }
+  }
+
+  void _onDaySelected(int day) {
+    setState(() {
+      _selectedDay = day;
+      _selectedTime = null;
+      _timeSlots = MockDataService.getTimeSlots(DateTime(_currentYear, _currentMonth, day));
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,11 +67,16 @@ class _BookingStep1ScreenState extends State<BookingStep1Screen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Tennis Outdoor Court A',
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  const Text('Eagle Sport Center',
-                      style: TextStyle(color: AppColors.white60, fontSize: 14)),
+                  if (_court != null) ...[
+                    Text(_court!.name,
+                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(_court!.center,
+                        style: const TextStyle(color: AppColors.white60, fontSize: 14)),
+                  ] else ...[
+                    const Text('Select a Court',
+                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  ],
                   const SizedBox(height: 24),
                   const Text('Select Date',
                       style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
@@ -62,9 +90,12 @@ class _BookingStep1ScreenState extends State<BookingStep1Screen> {
                     spacing: 10,
                     runSpacing: 10,
                     children: List.generate(_timeSlots.length, (i) {
-                      final active = _selectedTime == i;
+                      final active = _selectedTimeStr == _timeSlots[i];
                       return GestureDetector(
-                        onTap: () => setState(() => _selectedTime = i),
+                        onTap: () {
+                          setState(() => _selectedTimeStr = _timeSlots[i]);
+                          Navigator.of(context).pushNamed(Routes.bookingStep2);
+                        },
                         child: Container(
                           width: (MediaQuery.of(context).size.width - 60) / 3,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -153,10 +184,10 @@ class _BookingStep1ScreenState extends State<BookingStep1Screen> {
   Widget _dayCell(int week, int dow) {
     final n = week * 7 + dow;
     if (n < 1 || n > 30) return const SizedBox(height: 40);
-    final available = _available.contains(n);
+    final available = _availableDays[n] ?? false;
     final selected = _selectedDay == n;
     return GestureDetector(
-      onTap: available ? () => setState(() => _selectedDay = n) : null,
+      onTap: available ? () => _onDaySelected(n) : null,
       child: Container(
         height: 40,
         margin: const EdgeInsets.all(2),
