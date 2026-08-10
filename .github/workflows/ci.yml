@@ -24,6 +24,7 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.x
+      - run: cp .env.example .env
       - run: flutter pub get
       - run: dart analyze lib/
       - run: flutter analyze
@@ -38,6 +39,7 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.x
+      - run: cp .env.example .env
       - run: flutter pub get
       - run: flutter test --coverage
       - uses: codecov/codecov-action@v5
@@ -56,6 +58,7 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.x
+      - run: cp .env.example .env
       - run: flutter pub get
       - run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
@@ -107,14 +110,16 @@ jobs:
               run_id: context.runId,
             });
             const conclusion = run.conclusion || run.status;
-            const status = ['success','failure','cancelled'].includes(conclusion) ? conclusion : 'in_progress';
+            const status = ['success', 'failure', 'cancelled'].includes(conclusion)
+              ? conclusion
+              : 'in_progress';
             const headMsg =
               (context.payload.head_commit && context.payload.head_commit.message) ||
               (context.payload.pull_request && context.payload.pull_request.title) ||
               '';
             const body = {
               runId: String(context.runId),
-              runNumber: context.run.run_number,
+              runNumber: run.data.run_number,
               branch: context.ref.replace('refs/heads/', ''),
               event: context.eventName,
               commitSha: context.sha,
@@ -123,14 +128,22 @@ jobs:
               status,
             };
             try {
-              if (!process.env.CI_TOK) { console.log('CI_REPORT_TOKEN not set — skipping'); return; }
+              if (!process.env.CI_TOK) {
+                console.log('CI_REPORT_TOKEN not set — skipping');
+                return;
+              }
               const res = await fetch(process.env.CI_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.CI_TOK },
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: 'Bearer ' + process.env.CI_TOK,
+                },
                 body: JSON.stringify(body),
               });
               console.log('ci-report:', res.status, await res.text());
-            } catch (e) { console.error('report failed (non-fatal):', e.message); }
+            } catch (e) {
+              console.error('report failed (non-fatal):', e.message);
+            }
         env:
           CI_URL: ${{ env.CI_URL }}
           CI_TOK: ${{ env.CI_TOK }}
