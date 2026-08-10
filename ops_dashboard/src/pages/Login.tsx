@@ -1,4 +1,4 @@
-import { ChartLine, LockKey, ShieldCheck, SignOut } from '@phosphor-icons/react'
+import { ChartLine, LockKey, ShieldCheck, SignOut, Sparkle } from '@phosphor-icons/react'
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
@@ -10,6 +10,10 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  const quickEmail = import.meta.env.VITE_QUICK_ADMIN_EMAIL as string | undefined
+  const quickPass = import.meta.env.VITE_QUICK_ADMIN_PASSWORD as string | undefined
+  const quickReady = Boolean(quickEmail && quickPass)
 
   if (loading) {
     return (
@@ -31,6 +35,15 @@ export default function Login() {
 
   const clear = async () => {
     await signOut()
+  }
+
+  const quickSignIn = async () => {
+    if (!quickEmail || !quickPass) return
+    setBusy(true)
+    setError(null)
+    const err = await signIn(quickEmail, quickPass)
+    setBusy(false)
+    if (err) setError(err)
   }
 
   return (
@@ -82,6 +95,22 @@ export default function Login() {
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        {quickReady && (
+          <>
+            <div className="my-4 flex items-center gap-3 text-[11px] font-medium text-muted">
+              <span className="h-px flex-1 bg-line" /> or{' '}
+              <span className="h-px flex-1 bg-line" />
+            </div>
+            <button
+              type="button"
+              onClick={quickSignIn}
+              disabled={busy}
+              className="btn-ghost w-full"
+            >
+              <Sparkle size={16} weight="bold" /> Quick admin sign-in
+            </button>
+          </>
+        )}
         {hasSupabase && session && (
           <button onClick={clear} className="btn-ghost mt-3 w-full">
             <SignOut size={16} /> Sign out
