@@ -119,7 +119,7 @@ jobs:
               '';
             const body = {
               runId: String(context.runId),
-              runNumber: run.data.run_number,
+              runNumber: run.run_number,
               branch: context.ref.replace('refs/heads/', ''),
               event: context.eventName,
               commitSha: context.sha,
