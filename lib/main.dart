@@ -24,8 +24,8 @@ void main() async {
     ),
   );
 
-  AppLogger.init();
   await AppConfig.init();
+    AppLogger.init();
   await setupDependencyInjection();
   await SupabaseService().init();
   await PaymentService().init();

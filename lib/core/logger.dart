@@ -1,14 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart' as pkg;
 
+import '../services/remote_logger.dart';
+
 /// Structured logger for court+ app.
 /// Logs to console in debug, silent in release (or sends to Crashlytics).
+/// Important records are also forwarded to the remote ops logger so the
+/// dashboard records real client logs.
 final class AppLogger {
   AppLogger._();
 
   static final pkg.Logger _log = pkg.Logger('court+');
 
   static void init({bool verbose = false}) {
+    final remote = verbose || kDebugMode;
     if (verbose || kDebugMode) {
       pkg.hierarchicalLoggingEnabled = true;
       _log.level = pkg.Level.ALL;
@@ -23,6 +28,8 @@ final class AppLogger {
     } else {
       _log.level = pkg.Level.WARNING;
     }
+    // Remote upload matches what we surface: all logs in debug, WARNING+ else.
+    RemoteLogger.instance.attach(remote ? pkg.Level.FINE : pkg.Level.WARNING);
   }
 
   static void debug(String message, {Object? error}) =>
