@@ -1,42 +1,56 @@
 # Flutter
+build/
+.idea/
+*.iml
+*.lock
 .dart_tool/
 .packages
-build/
-*.iml
-.idea/
-.vscode/
-*.lock
+.pub/
 .flutter-plugins
 .flutter-plugins-dependencies
+**/doc/api/
 
-# Android
+# Environment (secrets)
+.env
+.env.production
+.env.staging
+
+# Supabase CLI temp
+supabase/.temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# Test
+coverage/
+
+# Gradle
 android/.gradle/
+android/app/build/
 android/local.properties
-android/key.properties
-android/app/google-services.json
-android/app/*.keystore
-android/app/*.jks
 
 # iOS
 ios/Pods/
 ios/.symlinks/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
+ios/Podfile.lock
 
 # macOS
 macos/Pods/
 macos/.symlinks/
 
-# Web
-web/
+# Linux
+linux/flutter/ephemeral/
 
-# OS files
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
+# Windows
+windows/flutter/ephemeral/
 
-# Environment
-.env
-.env.local
+# Debug info
+build/debug-info/

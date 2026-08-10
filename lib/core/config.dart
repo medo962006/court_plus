@@ -23,6 +23,12 @@ final class AppConfig {
   // ─── Google Maps ───
   static String get googleMapsApiKey => _get('GOOGLE_MAPS_API_KEY');
 
+  // ─── Stripe ───
+  static String get stripePublishableKey => _get('STRIPE_PUBLISHABLE_KEY');
+
+  // ─── Sentry ───
+  static String get sentryDsn => _get('SENTRY_DSN');
+
   // ─── Feature Flags ───
   static bool get enableAnalytics => _bool('ENABLE_ANALYTICS', false);
   static bool get enableCrashReporting => _bool('ENABLE_CRASH_REPORTING', false);
@@ -30,8 +36,8 @@ final class AppConfig {
   // ─── Build Info ───
   static String get appVersion => _get('APP_VERSION', '1.0.0');
   static String get buildNumber => _get('BUILD_NUMBER', '1');
-  static String get environment =>
-      kDebugMode ? 'development' : kProfileMode ? 'staging' : 'production';
+  static String get environment => _get('APP_ENV',
+      kDebugMode ? 'development' : kProfileMode ? 'staging' : 'production');
 
   // ─── Helpers ───
   static String _get(String key, [String fallback = '']) {
@@ -48,16 +54,24 @@ final class AppConfig {
     return v.toLowerCase() == 'true' || v == '1';
   }
 
-  /// Placeholder: in release, these come from --dart-define or Gradle.
+  /// Production: values come from --dart-define compile-time constants.
   static String _releaseValue(String key, String fallback) {
-    // Production setup: pass via --dart-define=SUPABASE_URL=...
-    // then read via String.fromEnvironment
     switch (key) {
+      case 'APP_ENV':
+        return const String.fromEnvironment('APP_ENV', defaultValue: 'production');
       case 'SUPABASE_URL':
         return const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
       case 'SUPABASE_ANON_KEY':
         return const String.fromEnvironment('SUPABASE_ANON_KEY',
             defaultValue: '');
+      case 'GOOGLE_MAPS_API_KEY':
+        return const String.fromEnvironment('GOOGLE_MAPS_API_KEY',
+            defaultValue: '');
+      case 'STRIPE_PUBLISHABLE_KEY':
+        return const String.fromEnvironment('STRIPE_PUBLISHABLE_KEY',
+            defaultValue: '');
+      case 'SENTRY_DSN':
+        return const String.fromEnvironment('SENTRY_DSN', defaultValue: '');
       default:
         return fallback;
     }

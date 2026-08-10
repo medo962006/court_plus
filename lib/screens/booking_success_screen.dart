@@ -44,6 +44,41 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Extract real booking data from route arguments
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final bookingId = args?['bookingId'] as String? ?? '#BK-PENDING';
+    final courtName = args?['courtName'] as String? ?? 'Court';
+    final dateStr = args?['date'] as String? ?? '';
+    final timeSlot = args?['timeSlot'] as String? ?? '';
+    final duration = (args?['duration'] as num?)?.toDouble() ?? 1.0;
+    final totalAmount = (args?['totalAmount'] as num?)?.toDouble() ?? 0;
+    final paymentMethod = args?['paymentMethod'] as String? ?? 'Card';
+
+    // Format date for display
+    String displayDate = dateStr;
+    try {
+      if (dateStr.isNotEmpty) {
+        final dt = DateTime.parse(dateStr);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        displayDate = '${days[dt.weekday - 1]}, ${dt.day} ${months[dt.month - 1]} ${dt.year}';
+      }
+    } catch (_) {}
+
+    // Format time for display
+    String displayTime = timeSlot;
+    if (timeSlot.length >= 5) {
+      final parts = timeSlot.split(':');
+      if (parts.length == 2) {
+        final h = int.parse(parts[0]);
+        final m = parts[1];
+        final amPm = h >= 12 ? 'PM' : 'AM';
+        final h12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+        displayTime = '$h12:$m $amPm';
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.lightBg,
       appBar: AppBar(
@@ -157,21 +192,24 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                           ),
                           const SizedBox(height: 16),
                           _detailRow(
-                              Ph.identification_card, 'Booking ID', '#BK-2025-0042'),
+                              Ph.identification_card, 'Booking ID',
+                              bookingId.length > 12
+                                  ? '#${bookingId.substring(0, 12).toUpperCase()}'
+                                  : '#$bookingId'),
                           const SizedBox(height: 12),
                           _detailRow(
-                              Ph.tennis_ball, 'Court', 'Grand Slam Court — Court A'),
+                              Ph.tennis_ball, 'Court', courtName),
                           const SizedBox(height: 12),
-                          _detailRow(Ph.calendar, 'Date', 'Sat, 15 Nov 2025'),
-                          const SizedBox(height: 12),
-                          _detailRow(
-                              Ph.clock, 'Time', '10:00 — 11:00 AM'),
+                          _detailRow(Ph.calendar, 'Date', displayDate),
                           const SizedBox(height: 12),
                           _detailRow(
-                              Ph.hourglass, 'Duration', '1 hour'),
+                              Ph.clock, 'Time', displayTime),
                           const SizedBox(height: 12),
                           _detailRow(
-                              Ph.wallet, 'Payment Method', 'Apple Pay'),
+                              Ph.hourglass, 'Duration', '${duration.toStringAsFixed(0)} hour${duration == 1 ? '' : 's'}'),
+                          const SizedBox(height: 12),
+                          _detailRow(
+                              Ph.wallet, 'Payment Method', paymentMethod),
                           const SizedBox(height: 12),
                           const Divider(color: AppColors.lightBorder, height: 1),
                           const SizedBox(height: 12),
@@ -185,9 +223,9 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                                 ),
                               ),
                               const Spacer(),
-                              const Text(
-                                'SR 185',
-                                style: TextStyle(
+                              Text(
+                                'SR ${totalAmount.toInt()}',
+                                style: const TextStyle(
                                   color: AppColors.lightText,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -219,7 +257,17 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                   height: 54,
                   child: ElevatedButton(
                     onPressed: () =>
-                        Navigator.of(context).pushNamed(Routes.bookingTicket),
+                        Navigator.of(context).pushNamed(
+                          Routes.bookingTicket,
+                          arguments: {
+                            'bookingId': bookingId,
+                            'courtName': courtName,
+                            'date': displayDate,
+                            'time': displayTime,
+                            'duration': duration,
+                            'totalAmount': totalAmount,
+                          },
+                        ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.neonGreen,
                       foregroundColor: AppColors.darkText,

@@ -1,13 +1,97 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
+import '../presentation/providers/supabase_provider.dart';
+import '../services/models.dart';
 
-class NotificationsScreen extends StatelessWidget {
+// ─── Provider ───
+
+final userNotificationsProvider = FutureProvider<List<NotificationItem>>((ref) async {
+  final service = ref.read(supabaseServiceProvider);
+  final result = await service.getUserNotifications();
+  return result.fold(
+    (notifications) => notifications,
+    (_) => <NotificationItem>[],
+  );
+});
+
+// ─── Screen ───
+
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  List<_DisplayNotification> _buildDisplayList(List<NotificationItem> items) {
+    if (items.isEmpty) return const [];
+
+    return items.map((n) {
+      final createdAt = DateTime.tryParse(n.createdAt) ?? DateTime.now();
+      return _DisplayNotification(
+        handle: n.type,
+        text: n.body ?? n.title ?? '',
+        time: _formatRelativeTime(createdAt),
+        badgeIcon: _iconForType(n.type),
+        action: _actionForType(n.type),
+        createdAt: createdAt,
+      );
+    }).toList();
+  }
+
+  String _formatRelativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+    return '${diff.inDays}d';
+  }
+
+  String _iconForType(String type) {
+    switch (type) {
+      case 'follow':
+        return Ph.user_plus_fill;
+      case 'match_invite':
+      case 'invite':
+        return Ph.tennis_ball_fill;
+      case 'booking':
+      case 'booking_confirmed':
+        return Ph.calendar_check_fill;
+      case 'like':
+      case 'moment_like':
+        return Ph.heart_fill;
+      default:
+        return Ph.bell_fill;
+    }
+  }
+
+  _ActionType _actionForType(String type) {
+    switch (type) {
+      case 'follow':
+        return _ActionType.followBack;
+      case 'match_invite':
+      case 'invite':
+        return _ActionType.accept;
+      case 'booking':
+      case 'booking_confirmed':
+        return _ActionType.view;
+      case 'like':
+      case 'moment_like':
+        return _ActionType.momentThumb;
+      default:
+        return _ActionType.view;
+    }
+  }
+
+  // ─── Build ───
+
+  @override
   Widget build(BuildContext context) {
+    final notificationsAsync = ref.watch(userNotificationsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.lightBg,
       appBar: AppBar(
@@ -30,60 +114,113 @@ class NotificationsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        children: const [
-          _SectionHeader('New'),
-          _NotificationTile(
-            handle: 'levilleon',
-            text: 'started following you.',
-            time: '34m',
-            badgeIcon: Ph.user_plus_fill,
-            action: _ActionType.followBack,
-          ),
-          _NotificationTile(
-            handle: 'Hafezs',
-            text: 'invite you to open match.',
-            time: '1h',
-            badgeIcon: Ph.tennis_ball_fill,
-            action: _ActionType.accept,
-          ),
-          _SectionHeader('yesterday'),
-          _NotificationTile(
-            handle: 'eaglesport',
-            text: 'confirmed your booking for Court A.',
-            time: '1d',
-            badgeIcon: Ph.calendar_check_fill,
-            action: _ActionType.view,
-          ),
-          _NotificationTile(
-            handle: 'sara_m',
-            text: 'liked your Moment.',
-            time: '1d',
-            badgeIcon: Ph.heart_fill,
-            action: _ActionType.momentThumb,
-          ),
-          _SectionHeader('Last 7 days'),
-          _NotificationTile(
-            handle: 'Hafezs',
-            text: 'invite you to open match.',
-            time: '2d',
-            badgeIcon: Ph.tennis_ball_fill,
-            action: _ActionType.accept,
-          ),
-          _NotificationTile(
-            handle: 'khaled9',
-            text: 'started following you.',
-            time: '5d',
-            badgeIcon: Ph.user_plus_fill,
-            action: _ActionType.following,
-          ),
-          SizedBox(height: 24),
-        ],
+      body: notificationsAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Iconify(Ph.warning_circle, size: 40, color: AppColors.lightMuted),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Failed to load notifications',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 15),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => ref.invalidate(userNotificationsProvider),
+                    child: const Text('Tap to retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        data: (items) {
+          final displayList = _buildDisplayList(items);
+          return _buildListView(displayList);
+        },
       ),
     );
   }
+
+  Widget _buildListView(List<_DisplayNotification> notifications) {
+    final today = <_DisplayNotification>[];
+    final yesterday = <_DisplayNotification>[];
+    final earlier = <_DisplayNotification>[];
+    final now = DateTime.now();
+
+    for (final n in notifications) {
+      final diff = now.difference(n.createdAt);
+      if (diff.inDays == 0) {
+        today.add(n);
+      } else if (diff.inDays == 1) {
+        yesterday.add(n);
+      } else {
+        earlier.add(n);
+      }
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      children: [
+        if (today.isNotEmpty) ...[
+          const _SectionHeader('Today'),
+          ...today.map((n) => _NotificationTile(
+                handle: n.handle,
+                text: n.text,
+                time: n.time,
+                badgeIcon: n.badgeIcon,
+                action: n.action,
+              )),
+        ],
+        if (yesterday.isNotEmpty) ...[
+          const _SectionHeader('Yesterday'),
+          ...yesterday.map((n) => _NotificationTile(
+                handle: n.handle,
+                text: n.text,
+                time: n.time,
+                badgeIcon: n.badgeIcon,
+                action: n.action,
+              )),
+        ],
+        if (earlier.isNotEmpty) ...[
+          const _SectionHeader('Earlier'),
+          ...earlier.map((n) => _NotificationTile(
+                handle: n.handle,
+                text: n.text,
+                time: n.time,
+                badgeIcon: n.badgeIcon,
+                action: n.action,
+              )),
+        ],
+        const SizedBox(height: 24),
+      ],
+    );
+  }
 }
+
+// ─── Internal data model ───
+
+class _DisplayNotification {
+  final String handle, text, time, badgeIcon;
+  final _ActionType action;
+  final DateTime createdAt;
+
+  const _DisplayNotification({
+    required this.handle,
+    required this.text,
+    required this.time,
+    required this.badgeIcon,
+    required this.action,
+    required this.createdAt,
+  });
+}
+
+// ─── UI widgets ───
 
 class _SectionHeader extends StatelessWidget {
   final String text;
@@ -124,7 +261,6 @@ class _NotificationTile extends StatelessWidget {
       child: Row(
         children: [
           // Avatar with badge
-          // PLACEHOLDER: user avatar photo → assets/images/avatar_<handle>.jpg
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -191,7 +327,6 @@ class _NotificationTile extends StatelessWidget {
       case _ActionType.view:
         return _pill('View', dark: true);
       case _ActionType.momentThumb:
-        // PLACEHOLDER: moment thumbnail → assets/images/moment_thumb.jpg
         return ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Container(

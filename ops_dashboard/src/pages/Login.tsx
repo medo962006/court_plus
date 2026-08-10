@@ -1,0 +1,93 @@
+import { ChartLine, LockKey, ShieldCheck, SignOut } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '../lib/auth'
+import { hasSupabase } from '../lib/supabase'
+
+export default function Login() {
+  const { session, loading, signIn, signOut } = useAuth()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  if (loading) {
+    return (
+      <div className="grid h-full w-full place-items-center text-sm text-muted">Loading…</div>
+    )
+  }
+  if (!hasSupabase || (hasSupabase && session && session.user)) {
+    return <Navigate to="/overview" replace />
+  }
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    const err = await signIn(email, password)
+    setBusy(false)
+    if (err) setError(err)
+  }
+
+  const clear = async () => {
+    await signOut()
+  }
+
+  return (
+    <div className="grid min-h-full place-items-center bg-surface p-6">
+      <div className="w-full max-w-sm rounded-xl border border-line bg-panel p-6 shadow-sm">
+        <div className="mb-6 flex items-center gap-2.5">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-brand-600 text-white">
+            <ChartLine size={20} weight="bold" />
+          </div>
+          <div className="text-lg font-bold text-ink">Court+ Ops</div>
+        </div>
+        <p className="mb-4 inline-flex items-center gap-2 text-xs font-medium text-muted">
+          <ShieldCheck size={15} /> Admin sign-in
+        </p>
+        <form onSubmit={submit}>
+          <label>
+            <span className="mb-1 block text-xs font-semibold text-muted">Email</span>
+            <input
+              className="input"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@courtplus.app"
+              required
+            />
+          </label>
+          <label className="mt-4 block">
+            <span className="mb-1 block text-xs font-semibold text-muted">Password</span>
+            <div className="relative">
+              <input
+                className="input pr-10"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+              />
+              <LockKey size={16} className="absolute top-1/2 right-3 -translate-y-1/2 text-muted" />
+            </div>
+          </label>
+          {error && (
+            <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              {error}
+            </div>
+          )}
+          <button className="btn-primary mt-5 w-full" type="submit" disabled={busy}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </button>
+        </form>
+        {hasSupabase && session && (
+          <button onClick={clear} className="btn-ghost mt-3 w-full">
+            <SignOut size={16} /> Sign out
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}

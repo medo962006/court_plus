@@ -1,340 +1,328 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
+import '../presentation/providers/supabase_provider.dart';
+import '../services/models.dart';
 
-class OpenMatchesScreen extends StatefulWidget {
+/// Provider that fetches open/upcoming matches from Supabase.
+final openMatchesProvider = FutureProvider<List<Match>>((ref) async {
+  final service = ref.read(supabaseServiceProvider);
+  final result = await service.getUserMatches();
+  return result.fold(
+    (matches) => matches,
+    (_) => <Match>[],
+  );
+});
+
+class OpenMatchesScreen extends ConsumerWidget {
   const OpenMatchesScreen({super.key});
 
   @override
-  State<OpenMatchesScreen> createState() => _OpenMatchesScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final matchesAsync = ref.watch(openMatchesProvider);
 
-class _OpenMatchesScreenState extends State<OpenMatchesScreen> {
-  static const _matches = [
-    _MatchData(
-      courtName: 'Court A - Tennis',
-      dateTime: 'Today, 18:00',
-      level: 'Intermediate',
-      gender: 'Mixed',
-      spots: 2,
-      price: 25.0,
-      courtInitials: 'A',
-    ),
-    _MatchData(
-      courtName: 'Court B - Padel',
-      dateTime: 'Tomorrow, 20:00',
-      level: 'Advanced',
-      gender: 'Male',
-      spots: 1,
-      price: 18.0,
-      courtInitials: 'B',
-    ),
-    _MatchData(
-      courtName: 'Court C - Tennis',
-      dateTime: 'Fri, 16:30',
-      level: 'Beginner',
-      gender: 'Mixed',
-      spots: 3,
-      price: 15.0,
-      courtInitials: 'C',
-    ),
-    _MatchData(
-      courtName: 'Court D - Tennis',
-      dateTime: 'Sat, 09:00',
-      level: 'Advanced',
-      gender: 'Female',
-      spots: 1,
-      price: 20.0,
-      courtInitials: 'D',
-    ),
-    _MatchData(
-      courtName: 'Court E - Padel',
-      dateTime: 'Sat, 14:00',
-      level: 'Intermediate',
-      gender: 'Mixed',
-      spots: 2,
-      price: 22.0,
-      courtInitials: 'E',
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightSurface,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: AppColors.lightBg,
+        backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
         leading: IconButton(
           icon: const Iconify(Ph.arrow_left, size: 22),
+          color: AppColors.lightText,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Open Matches',
+        title: const Text('Open match',
             style: TextStyle(
                 color: AppColors.lightText,
                 fontSize: 17,
                 fontWeight: FontWeight.w700)),
-      ),
-      body: Column(
-        children: [
-          // ── Header with filter / sort ──
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            color: AppColors.lightBg,
-            child: Row(
-              children: [
-                // Filter button
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).pushNamed(Routes.matchFilter),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.lightField,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Iconify(Ph.funnel, size: 16,
-                              color: AppColors.lightText),
-                          SizedBox(width: 6),
-                          Text('Filter',
-                              style: TextStyle(
-                                  color: AppColors.lightText,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Sort button
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.lightField,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Iconify(Ph.arrows_down_up, size: 16,
-                          color: AppColors.lightText),
-                      SizedBox(width: 6),
-                      Text('Sort',
-                          style: TextStyle(
-                              color: AppColors.lightText,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Iconify(Ph.list_bullets, size: 22),
+            color: AppColors.lightText,
+            onPressed: () {},
           ),
-
-          // ── Match cards list ──
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 80),
-              itemCount: _matches.length,
-              itemBuilder: (context, index) => _MatchCard(
-                data: _matches[index],
-                onTap: () {},
-              ),
-            ),
+          IconButton(
+            icon: const Iconify(Ph.funnel, size: 22),
+            color: AppColors.lightText,
+            onPressed: () {},
           ),
         ],
       ),
-      // ── Create Match FAB ──
+      body: matchesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Iconify(Ph.warning_circle, size: 40, color: AppColors.lightMuted),
+              const SizedBox(height: 12),
+              Text('Could not load matches', style: TextStyle(color: Colors.grey[600])),
+            ],
+          ),
+        ),
+        data: (matches) {
+          if (matches.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Iconify(Ph.soccer_ball, size: 48, color: AppColors.lightMuted),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No open matches yet',
+                    style: TextStyle(color: AppColors.lightMuted, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Create a match to get started!',
+                    style: TextStyle(color: AppColors.lightMuted, fontSize: 13),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text('Ready for amazing match',
+                    style: TextStyle(
+                        color: AppColors.lightText,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(height: 4),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text('These matches fit your search and your level',
+                    style: TextStyle(color: AppColors.lightMuted, fontSize: 14)),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                  itemCount: matches.length,
+                  itemBuilder: (context, index) => _MatchCard(
+                    match: matches[index],
+                    onTap: () {},
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.of(context).pushNamed(Routes.startMatch),
         backgroundColor: AppColors.neonGreen,
         foregroundColor: AppColors.darkText,
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(24),
         ),
         icon: const Iconify(Ph.plus, size: 20),
-        label: const Text('Create Match',
-            style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w700)),
+        label: const Text('Start a Match',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
       ),
     );
   }
 }
 
-// ── Data class ──
-class _MatchData {
-  final String courtName, dateTime, level, gender, courtInitials;
-  final int spots;
-  final double price;
-
-  const _MatchData({
-    required this.courtName,
-    required this.dateTime,
-    required this.level,
-    required this.gender,
-    required this.spots,
-    required this.price,
-    required this.courtInitials,
-  });
-}
-
-// ── Match card ──
 class _MatchCard extends StatelessWidget {
-  final _MatchData data;
+  final Match match;
   final VoidCallback onTap;
 
-  const _MatchCard({required this.data, required this.onTap});
+  const _MatchCard({required this.match, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.lightBg,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(8),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.lightBorder),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Court image placeholder ──
-              Container(
-                height: 130,
-                width: double.infinity,
-                color: AppColors.lightField,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Iconify(Ph.tennis_ball,
-                          color: AppColors.lightMuted, size: 32),
-                      const SizedBox(height: 6),
-                      Text('Court ${data.courtInitials}',
-                          style: const TextStyle(
-                              color: AppColors.lightMuted,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Details ──
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title
-                    Text(data.courtName,
-                        style: const TextStyle(
-                            color: AppColors.lightText,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 6),
-
-                    // Date/time
-                    Row(
-                      children: [
-                        const Iconify(Ph.clock,
-                            color: AppColors.lightMuted, size: 15),
-                        const SizedBox(width: 5),
-                        Text(data.dateTime,
-                            style: const TextStyle(
-                                color: AppColors.lightMuted,
-                                fontSize: 12)),
-                      ],
+              // Header: court name + badge
+              Row(
+                children: [
+                  Text(match.courtName,
+                      style: const TextStyle(
+                          color: AppColors.lightText,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.neonGreen.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    const SizedBox(height: 10),
-
-                    // Badges row + spots + price
-                    Row(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Level badge
-                        _badge(
-                          data.level,
-                          data.level == 'Beginner'
-                              ? AppColors.neonGreen
-                              : data.level == 'Intermediate'
-                                  ? const Color(0xFFFFB800)
-                                  : const Color(0xFFFF4D4F),
-                        ),
-                        const SizedBox(width: 6),
-                        // Gender badge
-                        _badge(
-                          data.gender,
-                          data.gender == 'Mixed'
-                              ? const Color(0xFF7C5CFC)
-                              : const Color(0xFF3B82F6),
-                        ),
-                        const Spacer(),
-                        // Spots
-                        Iconify(Ph.users,
-                            color: data.spots > 0
-                                ? AppColors.lightText
-                                : AppColors.lightMuted,
-                            size: 14),
+                        const Iconify(Ph.check, size: 12,
+                            color: AppColors.darkSlate),
                         const SizedBox(width: 4),
-                        Text('${data.spots} spots',
-                            style: TextStyle(
-                                color: data.spots > 0
-                                    ? AppColors.lightText
-                                    : AppColors.lightMuted,
+                        Text(match.level,
+                            style: const TextStyle(
+                                color: AppColors.darkSlate,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600)),
-                        const SizedBox(width: 12),
-                        // Price
-                        Text('\$${data.price.toStringAsFixed(0)}/person',
-                            style: const TextStyle(
-                                color: AppColors.lightText,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700)),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Player slots
+              Row(
+                children: [
+                  ...List.generate(match.currentPlayers, (i) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: AppColors.lightField,
+                            child: Icon(Icons.person,
+                                size: 20, color: AppColors.lightMuted),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text('Player',
+                              style: TextStyle(
+                                  color: AppColors.lightText,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    );
+                  }),
+                  ...List.generate(match.maxPlayers - match.currentPlayers, (i) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.lightField,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: AppColors.lightBorder, width: 1.5),
+                            ),
+                            child: const Icon(Icons.add,
+                                size: 20, color: AppColors.lightMuted),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text('Available',
+                              style: TextStyle(
+                                  color: AppColors.lightMuted,
+                                  fontSize: 11)),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // Date/time
+              Row(
+                children: [
+                  const Iconify(Ph.clock, color: AppColors.lightText, size: 16),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${match.date} · ${match.timeSlot}',
+                    style: const TextStyle(
+                        color: AppColors.lightText,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+
+              // Location
+              Row(
+                children: [
+                  const Iconify(Ph.map_pin,
+                      color: AppColors.lightMuted, size: 14),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(match.location,
+                        style: const TextStyle(
+                            color: AppColors.lightMuted, fontSize: 12),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Price + Book now
+              Row(
+                children: [
+                  Text('SR ${match.pricePerPerson.toStringAsFixed(0)} / person',
+                      style: const TextStyle(
+                          color: AppColors.lightText,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 16),
+                  const Iconify(Ph.clock,
+                      color: AppColors.lightMuted, size: 14),
+                  const SizedBox(width: 4),
+                  const Text('30 min',
+                      style: TextStyle(
+                          color: AppColors.lightMuted, fontSize: 12)),
+                  const Spacer(),
+                  SizedBox(
+                    height: 38,
+                    child: ElevatedButton(
+                      onPressed: onTap,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.darkSlate,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text('Book now',
+                          style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _badge(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withAlpha(80), width: 0.5),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
         ),
       ),
     );

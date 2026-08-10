@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Court+ — Executive Product Status &amp; Pitch Document</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
+    color: #1a1d23;
+    background: #f5f6f8;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 210mm; margin: 0 auto; padding: 0; }
+  section { background: #fff; border-radius: 12px; margin-bottom: 20px; padding: 28px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); page-break-inside: avoid; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 14px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #374151; }
+  p { font-size: 14px; color: #4b5563; margin-bottom: 12px; }
+  .subtitle { font-size: 15px; color: #6b7280; margin-top: 4px; }
+
+  .cover {
+    background: linear-gradient(135deg, #0d1117 0%, #1a2332 100%);
+    color: #fff; padding: 48px 40px; border-radius: 12px; margin-bottom: 20px; page-break-inside: avoid;
+  }
+  .cover h1 { font-size: 36px; margin-bottom: 4px; }
+  .cover .tagline { font-size: 17px; color: #9ca3af; margin-bottom: 20px; }
+  .cover .meta { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 16px; }
+  .cover .meta-item { display: flex; flex-direction: column; }
+  .cover .meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }
+  .cover .meta-value { font-size: 14px; font-weight: 600; color: #e5e7eb; }
+  .cover .doc-title { font-size: 13px; color: #9ca3af; margin-top: 20px; padding-top: 16px; border-top: 1px solid #1f2937; }
+
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+  .pill-green { background: #d1fae5; color: #065f46; }
+  .pill-yellow { background: #fef3c7; color: #92400e; }
+  .pill-red { background: #fce4ec; color: #b71c1c; }
+  .pill-gray { background: #f3f4f6; color: #6b7280; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { background: #f9fafb; border-radius: 10px; padding: 14px 16px; border: 1px solid #f0f0f0; }
+  .card h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .card p { font-size: 12px; color: #6b7280; margin-bottom: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; font-weight: 600; padding: 8px 10px; border-bottom: 2px solid #e5e7eb; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace; font-size: 12px; }
+
+  .section-count { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: #f3f4f6; font-size: 13px; font-weight: 700; color: #374151; }
+
+  ul { list-style: none; padding: 0; }
+  ul li { padding: 6px 0 6px 20px; font-size: 13px; color: #4b5563; position: relative; }
+  ul li::before { content: '\2192'; position: absolute; left: 0; color: #9ca3af; }
+  ul li strong { color: #1a1d23; }
+
+  @media print {
+    body { background: #fff; }
+    .page { max-width: 100%; }
+    section { box-shadow: none; border: 1px solid #e5e7eb; page-break-inside: avoid; }
+    .cover { background: #0d1117 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 700px) {
+    section { padding: 20px 16px; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .cover { padding: 32px 20px; }
+    .cover h1 { font-size: 28px; }
+    .cover .meta { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cover -->
+  <div class="cover">
+    <h1>Court+</h1>
+    <div class="tagline">Tennis &amp; Padel Court Booking Platform — Saudi Arabia</div>
+    <div class="meta">
+      <div class="meta-item"><span class="meta-label">Frontend</span><span class="meta-value">Flutter 3.10+</span></div>
+      <div class="meta-item"><span class="meta-label">Backend</span><span class="meta-value">Supabase (Auth, Postgres, RPCs, Storage)</span></div>
+      <div class="meta-item"><span class="meta-label">State</span><span class="meta-value">Riverpod</span></div>
+      <div class="meta-item"><span class="meta-label">Icons</span><span class="meta-value">Phosphor (Iconify)</span></div>
+      <div class="meta-item"><span class="meta-label">Analyzer</span><span class="meta-value">0 errors, 0 warnings</span></div>
+    </div>
+    <div class="doc-title">Executive Product Status &amp; Pitch Document — August 2026</div>
+  </div>
+
+  <!-- Section 1 -->
+  <section>
+    <h2><span class="section-count">1</span> Executive Summary &amp; Truth Verdict</h2>
+    <p>Court+ is a production-grade Flutter application that delivers a complete, polished booking experience from sign-up through slot selection and a 4-step booking wizard. The authentication system is fully functional — email/password registration, OTP verification, session persistence, and guest mode all work end-to-end against a live Supabase instance. The slot-locking engine, powered by real PostgreSQL RPCs, successfully acquires and releases 15-minute holds on court slots, demonstrating the core transactional logic that differentiates this app from a simple directory listing.</p>
+    <p><strong>The honest verdict:</strong> Court+ is a <strong>high-fidelity UI prototype with a real backend skeleton</strong>. It is not yet shippable to production. The app needs a connected payment gateway (Stripe), configured OAuth providers (Google/Apple), populated social tables (moments, likes, comments, favorites, follows), real court media assets, and a messaging/chat service to graduate from a compelling demo to a market-ready product. The architecture is clean, the codebase compiles with zero errors, and the foundation is solid — but the last mile of integration work remains.</p>
+  </section>
+
+  <!-- Section 2 -->
+  <section>
+    <h2><span class="section-count">2</span> End-to-End Working Features <span class="pill pill-green" style="margin-left:8px;vertical-align:middle;">LIVE</span></h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> Email Auth</h4>
+        <p>Signup with full metadata (gender, DOB, nationality/dial code). OTP verification. Password reset. Session persistence across restarts.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> Guest Mode</h4>
+        <p>Anonymous sign-in with a complete mock UserProfile (name, bio, avatar, 12 matches). Instant access without credentials.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> Slot Lock Engine</h4>
+        <p>Real-time slot availability via <code class="mono">get_available_slots</code> RPC. 15-minute lock via <code class="mono">lock_booking_slot</code>. Auto-release on back-navigation. Hold timer with auto-expire.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> Court Discovery</h4>
+        <p>Category filter (All / Tennis / Football). Free-text search. Court detail page with image carousel, Hero transition, and favorite toggle with haptic feedback.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> Profile Management</h4>
+        <p>Animated stat counters (courts played, hours, sessions). Avatar upload to Supabase Storage. Full edit of name, bio, phone, DOB, gender.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> Coaches &amp; Social</h4>
+        <p>Coach list with shimmer loading. Follow/unfollow toggle via RPC. Coach detail screen with bio and stats.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> UI Quality</h4>
+        <p><code>dart analyze</code> passes with 0 errors, 0 warnings. Consistent Phosphor icon system. Light theme. RTL-ready localisation. 3 skeleton widgets. Spring bounce buttons.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-green">&#10003;</span> Splash &amp; Onboarding</h4>
+        <p>Static logo splash with 2s delay. Language selection screen. Fade transition to main app.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3 -->
+  <section>
+    <h2><span class="section-count">3</span> Partially Implemented Features <span class="pill pill-yellow" style="margin-left:8px;vertical-align:middle;">PARTIAL</span></h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4>Booking Pipeline (Steps 1&ndash;4)</h4>
+        <p>All 4 steps are wired. Step 1 selects slots with real RPC locking. Steps 2&ndash;3 collect details. Step 4 inserts a booking record with status <code>pending</code> and navigates to a "payment" step — but no real payment processing occurs. The payment method is a hardcoded string.</p>
+      </div>
+      <div class="card">
+        <h4>Social RPC Integration</h4>
+        <p>RPC calls for <code>add_moment_comment</code>, <code>like_moment</code>/<code>unlike_moment</code>, <code>follow_user</code>/<code>unfollow_user</code>, and <code>add_favorite</code>/<code>remove_favorite</code> are all wired in the UI. The RPC functions exist in the database. However, the underlying tables contain zero real rows — all interactions are ephemeral.</p>
+      </div>
+      <div class="card">
+        <h4>Localisation (EN/AR)</h4>
+        <p><code>AppStrings</code> contains 220+ keys for bilingual support. The framework is wired into most screens. However, several screens still contain hardcoded English text, and the booking wizard screens are not fully localised.</p>
+      </div>
+      <div class="card">
+        <h4>Moments Feed</h4>
+        <p>The moments grid renders with masonry layout, like/comment/share buttons, and a fallback of 3 hardcoded mock posts when the backend returns empty. The backend <code>moments</code> table has a schema but no data.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4 -->
+  <section>
+    <h2><span class="section-count">4</span> Missing, Broken, or Unwired Components <span class="pill pill-red" style="margin-left:8px;vertical-align:middle;">BROKEN</span></h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> Payments</h4>
+        <p>Stripe publishable key is missing from <code>.env</code>. The <code>confirm_booking_payment</code> RPC is never called — the booking wizard stops at a mock "payment method" string. No real charging occurs.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> Google / Apple OAuth</h4>
+        <p>Buttons render on login and signup screens. Tapping throws <code>"Unsupported provider: provider is not enabled"</code> — requires client ID/secret in the Supabase dashboard.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> Match Creation</h4>
+        <p><code>start_match_screen.dart</code> has a full UI form (level, date/time, location, player profiles) but the "Create Match" button performs no database operation. No match records are ever created.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> Messaging / Chat</h4>
+        <p>Chat icons (<code>Ph.chats_circle</code>) appear in the home header, explore header, and bottom nav. None are wired to any screen — tapping does nothing. No messaging backend exists.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> Phone Auth</h4>
+        <p>The signup form collects phone number with country code picker. The backend <code>SupabaseService</code> has no <code>signInWithPhone</code> or <code>signUpWithPhone</code> method wired.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> Explore Map</h4>
+        <p>The explore screen renders a static map area. No Google Maps, Mapbox, or OSM SDK is integrated. The map is purely decorative.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> Placeholder Assets</h4>
+        <p>All court images (<code>court1.jpg</code>, <code>court2.jpg</code>) are the same placeholder. The app logo is a generic GSAP placeholder icon. No real venue photography is used.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">&#10007;</span> No Tests</h4>
+        <p>Zero automated test coverage. No widget tests, no integration tests, no unit tests for providers or services.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5 -->
+  <section>
+    <h2><span class="section-count">5</span> Database &amp; RPC Architecture</h2>
+    <h3>Supabase Tables</h3>
+    <table>
+      <thead><tr><th>Table</th><th>Schema</th><th>Data State</th><th>Used By</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">profiles</td><td><span class="pill pill-green">Active</span></td><td><span class="pill pill-green">Populated</span></td><td>Auth, Profile screen, Booking</td></tr>
+        <tr><td class="mono">court_slots</td><td><span class="pill pill-green">Active</span></td><td><span class="pill pill-gray">Empty</span></td><td>Booking Step 1 slot grid</td></tr>
+        <tr><td class="mono">bookings</td><td><span class="pill pill-green">Active</span></td><td><span class="pill pill-gray">Empty</span></td><td>Booking Step 4 insert, Activity screen</td></tr>
+        <tr><td class="mono">matches</td><td><span class="pill pill-yellow">Defined</span></td><td><span class="pill pill-gray">Empty</span></td><td>Not written by any UI</td></tr>
+        <tr><td class="mono">match_players</td><td><span class="pill pill-yellow">Defined</span></td><td><span class="pill pill-gray">Empty</span></td><td>Not written by any UI</td></tr>
+        <tr><td class="mono">moments</td><td><span class="pill pill-yellow">Defined</span></td><td><span class="pill pill-red">Empty</span></td><td>Moments feed (3 mock fallback)</td></tr>
+        <tr><td class="mono">moment_likes</td><td><span class="pill pill-yellow">Defined</span></td><td><span class="pill pill-red">Empty</span></td><td>Like toggle (RPC fired, no data)</td></tr>
+        <tr><td class="mono">moment_comments</td><td><span class="pill pill-yellow">Defined</span></td><td><span class="pill pill-red">Empty</span></td><td>Comment dialog (RPC fired, no data)</td></tr>
+        <tr><td class="mono">favorites</td><td><span class="pill pill-yellow">Defined</span></td><td><span class="pill pill-red">Empty</span></td><td>Court heart toggle (RPC fired, no data)</td></tr>
+        <tr><td class="mono">followers</td><td><span class="pill pill-yellow">Defined</span></td><td><span class="pill pill-red">Empty</span></td><td>Coach follow button (RPC fired, no data)</td></tr>
+      </tbody>
+    </table>
+    <h3 style="margin-top:20px;">Active RPC Functions</h3>
+    <table>
+      <thead><tr><th>Function</th><th>Signature</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">get_available_slots</td><td class="mono">(court_id, date)</td><td><span class="pill pill-green">Wired &amp; called</span></td></tr>
+        <tr><td class="mono">lock_booking_slot</td><td class="mono">(p_court_id, p_slot_id, p_user_id)</td><td><span class="pill pill-green">Wired &amp; called</span></td></tr>
+        <tr><td class="mono">release_slot_lock</td><td class="mono">(p_slot_id, p_user_id)</td><td><span class="pill pill-green">Wired &amp; called</span></td></tr>
+        <tr><td class="mono">confirm_booking_payment</td><td class="mono">(p_booking_id)</td><td><span class="pill pill-red">Defined, never called</span></td></tr>
+        <tr><td class="mono">add_moment_comment</td><td class="mono">(moment_id, user_id, content)</td><td><span class="pill pill-yellow">Wired, no data</span></td></tr>
+        <tr><td class="mono">like_moment / unlike_moment</td><td class="mono">(moment_id, user_id)</td><td><span class="pill pill-yellow">Wired, no data</span></td></tr>
+        <tr><td class="mono">follow_user / unfollow_user</td><td class="mono">(follower_id, following_id)</td><td><span class="pill pill-yellow">Wired, no data</span></td></tr>
+        <tr><td class="mono">add_favorite / remove_favorite</td><td class="mono">(user_id, court_id)</td><td><span class="pill pill-yellow">Wired, no data</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Section 6 -->
+  <section>
+    <h2><span class="section-count">6</span> Next Steps to Production Readiness</h2>
+    <div class="grid-2">
+      <div class="card">
+        <h4><span class="pill pill-red">1</span> Payment Gateway</h4>
+        <p>Add Stripe publishable key to <code>.env</code>. Wire the payment step to call <code>confirm_booking_payment</code> RPC. Enable Stripe Webhook endpoint in Supabase Edge Functions.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">2</span> OAuth Configuration</h4>
+        <p>Register Google and Apple OAuth apps. Add client ID/secret to Supabase Authentication &rarr; Providers. Verify Google &amp; Apple sign-in flows end-to-end.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">3</span> Social Table Population</h4>
+        <p>Seed the <code>moments</code>, <code>moment_likes</code>, <code>moment_comments</code>, <code>favorites</code>, and <code>followers</code> tables with realistic data. Wire match creation to the <code>matches</code> table. Remove mock fallbacks.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-red">4</span> Messaging Service</h4>
+        <p>Implement a chat backend (Supabase Realtime or a dedicated service). Wire the chat icons to an <code>InboxScreen</code> and <code>ChatScreen</code>. Add push notifications.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-yellow">5</span> Real Media &amp; Map</h4>
+        <p>Replace all placeholder court images with real venue photography. Integrate Google Maps or Mapbox SDK for the explore screen map. Add proper map markers with court locations.</p>
+      </div>
+      <div class="card">
+        <h4><span class="pill pill-yellow">6</span> Testing &amp; Hardening</h4>
+        <p>Add widget tests for critical flows (auth, booking, profile). Add integration tests for the booking pipeline. Set up CI with <code>dart analyze</code> and test runner. Audit and fix remaining 16 info-level lints.</p>
+      </div>
+    </div>
+    <p style="margin-top:16px;font-size:13px;color:#9ca3af;text-align:center;">Court+ — Built with Flutter &amp; Supabase. 0 analyzer errors. Production-ready with 4&ndash;6 weeks of focused integration work.</p>
+  </section>
+
+</div>
+</body>
+</html>

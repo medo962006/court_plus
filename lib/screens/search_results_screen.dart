@@ -1,64 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
+import '../services/models.dart';
+import '../presentation/providers/courts_provider.dart';
 
-class SearchResultsScreen extends StatefulWidget {
+class SearchResultsScreen extends ConsumerStatefulWidget {
   const SearchResultsScreen({super.key});
 
   @override
-  State<SearchResultsScreen> createState() => _SearchResultsScreenState();
+  ConsumerState<SearchResultsScreen> createState() => _SearchResultsScreenState();
 }
 
-class _SearchResultsScreenState extends State<SearchResultsScreen> {
+class _SearchResultsScreenState extends ConsumerState<SearchResultsScreen> {
   int _navIndex = 1;
-  int _tabIndex = 0; // 0 = Courts, 1 = Coaches
-  int _chipIndex = 0; // 0 = All courts, 1 = Tennis, 2 = Football
+  int _tabIndex = 0;
+  int _chipIndex = 0;
 
   static const _tabs = ['Courts', 'Coaches'];
   static const _chips = ['All courts', 'Tennis', 'Football'];
 
-  static const _courts = [
-    (
-      'assets/images/court1.jpg',
-      'Tennis Outdoor Court A',
-      'Eagle Sport Center',
-      '3km away',
-      4.5
-    ),
-    (
-      'assets/images/court2.jpg',
-      'Tennis Indoor Court B',
-      'Riyadh Sports Hub',
-      '5km away',
-      4.8
-    ),
-    (
-      'assets/images/banner1.jpg',
-      'Football Pitch 1',
-      'Al Malaz Club',
-      '2km away',
-      4.2
-    ),
-    (
-      'assets/images/court1.jpg',
-      'Basketball Court A',
-      'North Arena',
-      '1.8km away',
-      4.6
-    ),
-    (
-      'assets/images/court2.jpg',
-      'Padel Court 3',
-      'Padel Zone',
-      '4km away',
-      4.3
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final courtsAsync = ref.watch(courtsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.lightBg,
       appBar: AppBar(
@@ -79,15 +46,10 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 onPressed: () => Navigator.of(context).pushNamed(Routes.notifications),
               ),
               Positioned(
-                right: 10,
-                top: 8,
+                right: 10, top: 8,
                 child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                  ),
+                  width: 8, height: 8,
+                  decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
                 ),
               ),
             ],
@@ -96,7 +58,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       ),
       body: Column(
         children: [
-          // ── Search bar ──
+          // Search bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Container(
@@ -111,7 +73,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 children: [
                   Iconify(Ph.magnifying_glass, size: 20, color: AppColors.lightMuted),
                   SizedBox(width: 10),
-                  Text('Alahly',
+                  Text('Search courts...',
                       style: TextStyle(color: AppColors.lightText, fontSize: 14, fontWeight: FontWeight.w500)),
                 ],
               ),
@@ -119,7 +81,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── Category tabs ──
+          // Category tabs
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -131,21 +93,16 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                     margin: const EdgeInsets.only(right: 20),
                     decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: active ? AppColors.neonGreen : Colors.transparent,
-                          width: 2.5,
-                        ),
-                      ),
+                      border: Border(bottom: BorderSide(
+                        color: active ? AppColors.neonGreen : Colors.transparent,
+                        width: 2.5,
+                      )),
                     ),
-                    child: Text(
-                      _tabs[i],
-                      style: TextStyle(
-                        color: active ? AppColors.lightText : AppColors.lightMuted,
-                        fontSize: 15,
-                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                      ),
-                    ),
+                    child: Text(_tabs[i], style: TextStyle(
+                      color: active ? AppColors.lightText : AppColors.lightMuted,
+                      fontSize: 15,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    )),
                   ),
                 );
               }),
@@ -153,48 +110,47 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           ),
           const SizedBox(height: 12),
 
-          // ── Filter chips ──
+          // Filter chips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
-              children: [
-                ...List.generate(_chips.length, (i) {
-                  final active = i == _chipIndex;
-                  return GestureDetector(
-                    onTap: () => setState(() => _chipIndex = i),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: active ? AppColors.neonGreen : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: active ? AppColors.neonGreen : AppColors.lightBorder,
-                        ),
-                      ),
-                      child: Text(
-                        _chips[i],
-                        style: TextStyle(
-                          color: active ? AppColors.darkText : AppColors.lightMuted,
-                          fontSize: 13,
-                          fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                      ),
+              children: List.generate(_chips.length, (i) {
+                final active = i == _chipIndex;
+                return GestureDetector(
+                  onTap: () => setState(() => _chipIndex = i),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: active ? AppColors.neonGreen : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: active ? AppColors.neonGreen : AppColors.lightBorder),
                     ),
-                  );
-                }),
-              ],
+                    child: Text(_chips[i], style: TextStyle(
+                      color: active ? AppColors.darkText : AppColors.lightMuted,
+                      fontSize: 13,
+                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                    )),
+                  ),
+                );
+              }),
             ),
           ),
           const SizedBox(height: 12),
 
-          // ── Results count + filter icon ──
+          // Results count + filter
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                const Text('24 results found',
-                    style: TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+                courtsAsync.when(
+                  data: (courts) => Text('${courts.length} results found',
+                      style: const TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+                  loading: () => const Text('Loading...',
+                      style: TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+                  error: (_, _) => const Text('0 results found',
+                      style: TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+                ),
                 const Spacer(),
                 IconButton(
                   onPressed: () {},
@@ -207,21 +163,35 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
           ),
           const SizedBox(height: 8),
 
-          // ── Results list ──
+          // Results list (live data)
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-              itemCount: _courts.length,
-              separatorBuilder: (context, i) => const SizedBox(height: 16),
-              itemBuilder: (context, i) {
-                final c = _courts[i];
-                return _SearchResultCard(
-                  image: c.$1,
-                  title: c.$2,
-                  center: c.$3,
-                  distance: c.$4,
-                  rating: c.$5,
-                  onTap: () => Navigator.of(context).pushNamed(Routes.courtDetails),
+            child: courtsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.neonGreen)),
+              error: (e, _) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                    const SizedBox(height: 12),
+                    Text('$e', style: const TextStyle(color: AppColors.lightMuted)),
+                  ],
+                ),
+              ),
+              data: (courts) {
+                final filtered = _filterCourts(courts);
+                if (filtered.isEmpty) {
+                  return const Center(
+                    child: Text('No courts found', style: TextStyle(color: AppColors.lightMuted)),
+                  );
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 16),
+                  itemBuilder: (context, i) => _SearchResultCard(
+                    court: filtered[i],
+                    onTap: () => Navigator.of(context).pushNamed(Routes.courtDetails, arguments: filtered[i].id),
+                  ),
                 );
               },
             ),
@@ -240,21 +210,18 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       ),
     );
   }
+
+  List<Court> _filterCourts(List<Court> courts) {
+    final chip = _chips[_chipIndex];
+    if (chip == 'All courts') return courts;
+    return courts.where((c) => c.sportType == chip).toList();
+  }
 }
 
 class _SearchResultCard extends StatelessWidget {
-  final String image, title, center, distance;
-  final double rating;
+  final Court court;
   final VoidCallback onTap;
-
-  const _SearchResultCard({
-    required this.image,
-    required this.title,
-    required this.center,
-    required this.distance,
-    required this.rating,
-    required this.onTap,
-  });
+  const _SearchResultCard({required this.court, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -265,64 +232,44 @@ class _SearchResultCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.lightBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Image with bookmark overlay ──
             Stack(
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.asset(image,
-                      width: double.infinity, height: 160, fit: BoxFit.cover),
+                  child: Container(
+                    width: double.infinity,
+                    height: 160,
+                    color: AppColors.lightField,
+                    child: const Center(child: Icon(Icons.sports_tennis, size: 48, color: AppColors.lightMuted)),
+                  ),
                 ),
                 Positioned(
-                  right: 10,
-                  bottom: 10,
+                  right: 10, bottom: 10,
                   child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Iconify(Ph.bookmark_simple_fill,
-                          size: 18, color: AppColors.lightText),
-                    ),
+                    width: 34, height: 34,
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+                    child: const Center(child: Iconify(Ph.bookmark_simple_fill, size: 18, color: AppColors.lightText)),
                   ),
                 ),
               ],
             ),
-            // ── Details ──
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          color: AppColors.lightText,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700)),
+                  Text(court.name, style: const TextStyle(color: AppColors.lightText, fontSize: 15, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
                       const Iconify(Ph.star_fill, size: 14, color: Color(0xFFFFB800)),
                       const SizedBox(width: 4),
-                      Text('$rating',
-                          style: const TextStyle(
-                              color: AppColors.lightText,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600)),
+                      Text('${court.rating}', style: const TextStyle(color: AppColors.lightText, fontSize: 12, fontWeight: FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -330,11 +277,9 @@ class _SearchResultCard extends StatelessWidget {
                     children: [
                       const Iconify(Ph.map_pin, size: 14, color: AppColors.lightMuted),
                       const SizedBox(width: 4),
-                      Text(center,
-                          style: const TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+                      Text(court.center, style: const TextStyle(color: AppColors.lightMuted, fontSize: 13)),
                       const Spacer(),
-                      Text(distance,
-                          style: const TextStyle(color: AppColors.lightMuted, fontSize: 12)),
+                      Text(court.distance > 0 ? '${court.distance}km away' : 'Distance unavailable', style: const TextStyle(color: AppColors.lightMuted, fontSize: 12)),
                     ],
                   ),
                 ],
@@ -350,7 +295,6 @@ class _SearchResultCard extends StatelessWidget {
 class _BottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onTap;
-
   const _BottomNav({required this.index, required this.onTap});
 
   static const _items = [
@@ -383,28 +327,21 @@ class _BottomNav extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        height: 3,
-                        width: 28,
+                        height: 3, width: 28,
                         margin: const EdgeInsets.only(bottom: 6),
                         decoration: BoxDecoration(
                           color: active ? AppColors.neonGreen : Colors.transparent,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      Iconify(
-                        _items[i].$2,
-                        size: 24,
-                        color: active ? const Color(0xFF7CB800) : AppColors.lightMuted,
-                      ),
+                      Iconify(_items[i].$2, size: 24,
+                          color: active ? const Color(0xFF7CB800) : AppColors.lightMuted),
                       const SizedBox(height: 2),
-                      Text(
-                        _items[i].$1,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                          color: active ? AppColors.lightText : AppColors.lightMuted,
-                        ),
-                      ),
+                      Text(_items[i].$1, style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                        color: active ? AppColors.lightText : AppColors.lightMuted,
+                      )),
                     ],
                   ),
                 ),

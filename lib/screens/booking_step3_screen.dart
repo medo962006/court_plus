@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
+import '../presentation/providers/booking_provider.dart';
 
-class BookingStep3Screen extends StatefulWidget {
+class BookingStep3Screen extends ConsumerStatefulWidget {
   const BookingStep3Screen({super.key});
 
   @override
-  State<BookingStep3Screen> createState() => _BookingStep3ScreenState();
+  ConsumerState<BookingStep3Screen> createState() => _BookingStep3ScreenState();
 }
 
-class _BookingStep3ScreenState extends State<BookingStep3Screen> {
+class _BookingStep3ScreenState extends ConsumerState<BookingStep3Screen> {
   static const _items = <_AddonItem>[
     _AddonItem('Racket Rental', Ph.tennis_ball, 20),
     _AddonItem('Ball Pack', Ph.dribbble_logo_fill, 15),
@@ -42,19 +44,20 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final bookingState = ref.watch(bookingStateProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: AppColors.darkBg,
+        backgroundColor: AppColors.lightBg,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Iconify(Ph.arrow_left, size: 22, color: Colors.white),
+          icon: const Iconify(Ph.arrow_left, size: 22, color: AppColors.lightText),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text('Add-ons',
-            style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+            style: TextStyle(color: AppColors.lightText, fontSize: 17, fontWeight: FontWeight.w700)),
       ),
       body: Column(
         children: [
@@ -68,7 +71,7 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                 _stepDot('2', true),
                 _stepLine(true),
                 _stepDot('3', true),
-                _stepLine(false),
+                _stepLine(true),
                 _stepDot('4', false),
               ],
             ),
@@ -79,85 +82,23 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Booking context from provider ──
+                  if (bookingState.court != null) ...[
+                    Text(bookingState.court!.name,
+                        style: const TextStyle(color: AppColors.lightText, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${bookingState.selectedDate != null ? _formatDate(bookingState.selectedDate!) : ''}'
+                      '${bookingState.selectedTimeSlot != null ? ' @ ${bookingState.selectedTimeSlot}' : ''}'
+                      ' • ${bookingState.duration}h',
+                      style: const TextStyle(color: AppColors.white60, fontSize: 13),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   const Text('Extras & Equipment',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                      style: TextStyle(color: AppColors.lightText, fontSize: 16, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 16),
-                  ..._items.map((item) => Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.darkField,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.darkBorder),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.darkSlate,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Center(
-                            child: Iconify(item.icon, size: 22, color: AppColors.neonGreen),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item.name,
-                                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                              Text('SR ${item.price}/unit',
-                                  style: const TextStyle(color: AppColors.white60, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => _updateQty(item.name, -1),
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: (_quantities[item.name] ?? 0) > 0
-                                      ? AppColors.neonGreen
-                                      : AppColors.darkBorder,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Center(
-                                    child: Icon(Icons.remove, size: 16, color: Colors.black)),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 36,
-                              child: Center(
-                                child: Text('${_quantities[item.name]}',
-                                    style: const TextStyle(
-                                        color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () => _updateQty(item.name, 1),
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  color: AppColors.neonGreen,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Center(
-                                    child: Icon(Icons.add, size: 16, color: Colors.black)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  )),
+                  ..._items.map((item) => _buildItem(item)),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -178,6 +119,7 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -191,6 +133,7 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                 height: 54,
                 child: ElevatedButton(
                   onPressed: () {
+                    ref.read(bookingStateProvider.notifier).setAddOns(_quantities);
                     Navigator.of(context).pushNamed(
                       Routes.bookingStep4,
                       arguments: {
@@ -204,6 +147,89 @@ class _BookingStep3ScreenState extends State<BookingStep3Screen> {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.month}/${date.day}/${date.year}';
+  }
+
+  Widget _buildItem(_AddonItem item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.darkField,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.darkBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.darkSlate,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Iconify(item.icon, size: 22, color: AppColors.neonGreen),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.name,
+                    style: const TextStyle(color: AppColors.lightText, fontSize: 14, fontWeight: FontWeight.w600)),
+                Text('SR ${item.price}/unit',
+                    style: const TextStyle(color: AppColors.white60, fontSize: 13)),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _updateQty(item.name, -1),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: (_quantities[item.name] ?? 0) > 0
+                        ? AppColors.neonGreen
+                        : AppColors.darkBorder,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                      child: Icon(Icons.remove, size: 16, color: Colors.black)),
+                ),
+              ),
+              SizedBox(
+                width: 36,
+                child: Center(
+                  child: Text('${_quantities[item.name]}',
+                      style: const TextStyle(
+                          color: AppColors.lightText, fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _updateQty(item.name, 1),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.neonGreen,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                      child: Icon(Icons.add, size: 16, color: Colors.black)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

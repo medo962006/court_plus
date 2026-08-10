@@ -1,55 +1,111 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
-import '../widgets/country_flag.dart';
+import '../services/image_service.dart';
+import '../services/supabase_service.dart';
+import '../presentation/providers/auth_provider.dart';
+import '../l10n/app_strings.dart';
 
-class UpdateProfileScreen extends StatefulWidget {
+class UpdateProfileScreen extends ConsumerStatefulWidget {
   const UpdateProfileScreen({super.key});
 
   @override
-  State<UpdateProfileScreen> createState() => _UpdateProfileScreenState();
+  ConsumerState<UpdateProfileScreen> createState() => _UpdateProfileScreenState();
 }
 
-class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
-  final TextEditingController _nameController =
-      TextEditingController(text: 'Justin Nurmagomedov');
-  final TextEditingController _usernameController =
-      TextEditingController(text: 'justinnurmagomedov');
-  final TextEditingController _phoneController =
-      TextEditingController(text: '+44 7700 123456');
-  final TextEditingController _bioController = TextEditingController(
-      text: 'Professional athlete & sports enthusiast. Love competing and exploring new courts around the world.');
-  final TextEditingController _dobController =
-      TextEditingController(text: '15/03/1995');
-
-  String _selectedGender = 'Male';
-  int _bioLength = 0;
+class _UpdateProfileScreenState extends ConsumerState<UpdateProfileScreen> {
+  final _nameCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _bioCtrl = TextEditingController();
+  final _dobCtrl = TextEditingController();
+  String? _avatarUrl;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _bioController.addListener(
-        () => setState(() => _bioLength = _bioController.text.length));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authStateProvider).user;
+      if (user != null) {
+        _nameCtrl.text = user.fullName;
+        _usernameCtrl.text = user.username;
+        _phoneCtrl.text = user.phone ?? '';
+        _bioCtrl.text = user.bio ?? '';
+        _dobCtrl.text = user.dateOfBirth ?? '';
+        setState(() => _avatarUrl = user.avatarUrl);
+      }
+    });
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _usernameController.dispose();
-    _phoneController.dispose();
-    _bioController.dispose();
-    _dobController.dispose();
+    _nameCtrl.dispose();
+    _usernameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _bioCtrl.dispose();
+    _dobCtrl.dispose();
     super.dispose();
   }
 
-  void _save() {
-    Navigator.of(context).pop();
+  Future<void> _pickAvatar() async {
+    final user = ref.read(authStateProvider).user;
+    if (user == null) return;
+    final url = await ImageService().pickAndUploadImage(
+      bucket: 'avatars',
+      userId: user.id,
+    );
+    if (url != null && mounted) {
+      setState(() => _avatarUrl = url);
+    }
+  }
+
+  Future<void> _save() async {
+    final user = ref.read(authStateProvider).user;
+    if (user == null) return;
+
+    setState(() => _isSaving = true);
+
+    final updates = <String, dynamic>{
+      'full_name': _nameCtrl.text.trim(),
+      'username': _usernameCtrl.text.trim(),
+      'phone': _phoneCtrl.text.trim(),
+      'bio': _bioCtrl.text.trim(),
+      'date_of_birth': _dobCtrl.text.trim(),
+      if (_avatarUrl != null) 'avatar_url': _avatarUrl,
+    };
+
+    final result = await SupabaseService().updateProfile(user.id, updates);
+    result.fold(
+      (_) {
+        ref.read(authStateProvider.notifier).updateProfile(user.copyWith(
+          fullName: _nameCtrl.text.trim(),
+          username: _usernameCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim(),
+          bio: _bioCtrl.text.trim(),
+          dateOfBirth: _dobCtrl.text.trim(),
+          avatarUrl: _avatarUrl,
+        ));
+        if (mounted) Navigator.of(context).pop();
+      },
+      (e) {
+        if (mounted) {
+          setState(() => _isSaving = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+          );
+        }
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final t = AppStrings.of(context).t;
+
+        return Scaffold(
       backgroundColor: AppColors.lightSurface,
       appBar: AppBar(
         backgroundColor: AppColors.lightBg,
@@ -60,102 +116,47 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
           color: AppColors.lightText,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Update Profile',
-          style: TextStyle(
-            color: AppColors.lightText,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: Text(t('updateProfile'),
+            style: const TextStyle(color: AppColors.lightText, fontSize: 17, fontWeight: FontWeight.w700)),
+        centerTitle: true,
         actions: [
           TextButton(
-            onPressed: _save,
-            child: const Text(
-              'Save',
-              style: TextStyle(
-                color: AppColors.lightText,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            onPressed: _isSaving ? null : _save,
+            child: _isSaving
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(t('save'), style: const TextStyle(color: AppColors.neonGreen, fontSize: 16, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // ── Banner + Profile Pic ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SizedBox(
-                height: 170,
+            // Avatar section
+            Center(
+              child: GestureDetector(
+                onTap: _pickAvatar,
                 child: Stack(
-                  clipBehavior: Clip.none,
                   children: [
-                    // Banner image with camera+plus overlay
-                    Container(
-                      height: 130,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: AppColors.lightField,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE1E4E8)),
-                      ),
-                      child: Center(
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Iconify(
-                            Ph.camera,
-                            size: 22,
-                            color: AppColors.lightText,
-                          ),
-                        ),
-                      ),
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: AppColors.lightField,
+                      backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
+                      child: _avatarUrl == null
+                          ? const Icon(Icons.person, size: 50, color: AppColors.lightMuted)
+                          : null,
                     ),
-                    // Profile pic overlapping banner
                     Positioned(
                       bottom: 0,
-                      left: 20,
-                      child: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 42,
-                            backgroundColor: Colors.white,
-                            child: CircleAvatar(
-                              radius: 39,
-                              backgroundColor: AppColors.lightField,
-                              child: const Icon(
-                                Icons.person_outline,
-                                color: AppColors.lightMuted,
-                                size: 36,
-                              ),
-                            ),
-                          ),
-                          // Camera+plus overlay on avatar
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: const BoxDecoration(
-                                color: AppColors.neonGreen,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Iconify(
-                                Ph.camera,
-                                size: 14,
-                                color: AppColors.lightText,
-                              ),
-                            ),
-                          ),
-                        ],
+                      right: 0,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: AppColors.neonGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.camera_alt, size: 18, color: AppColors.darkText),
                       ),
                     ),
                   ],
@@ -163,419 +164,51 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // ── Form Card ──
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.lightBorder),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Full Name ──
-                  const _FormLabel(text: 'Full name'),
-                  const SizedBox(height: 8),
-                  _FormField(
-                    controller: _nameController,
-                    hint: 'Full name',
-                    prefixIcon: Ph.user,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── User Name ──
-                  const _FormLabel(text: 'User name'),
-                  const SizedBox(height: 8),
-                  _FormField(
-                    controller: _usernameController,
-                    hint: 'User name',
-                    prefixIcon: Ph.at,
-                    suffixIcon: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: AppColors.neonGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Iconify(
-                        Ph.check,
-                        size: 13,
-                        color: AppColors.darkText,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Mobile Number ──
-                  const _FormLabel(text: 'Mobile number'),
-                  const SizedBox(height: 8),
-                  _FormField(
-                    controller: _phoneController,
-                    hint: 'Mobile number',
-                    prefixIcon: Ph.device_mobile,
-                    prefixWidget: Padding(
-                      padding: const EdgeInsets.only(left: 12, right: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CountryFlag(code: 'gb', width: 20),
-                          const SizedBox(width: 4),
-                          const Text(
-                            '+44',
-                            style: TextStyle(
-                              color: AppColors.lightText,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    suffixIcon: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: AppColors.neonGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Iconify(
-                        Ph.check,
-                        size: 13,
-                        color: AppColors.darkText,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Date of Birth + Gender side by side ──
-                  Row(
-                    children: [
-                      // Date of Birth
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const _FormLabel(text: 'Date of Birth'),
-                            const SizedBox(height: 8),
-                            _FormField(
-                              controller: _dobController,
-                              hint: 'DD/MM/YYYY',
-                              prefixIcon: Ph.calendar_blank,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Gender
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const _FormLabel(text: 'Gender'),
-                            const SizedBox(height: 8),
-                            Container(
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: AppColors.lightField,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE1E4E8)),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  isExpanded: true,
-                                  value: _selectedGender,
-                                  style: const TextStyle(
-                                    color: AppColors.lightText,
-                                    fontSize: 15,
-                                  ),
-                                  dropdownColor: Colors.white,
-                                  items: const [
-                                    DropdownMenuItem(
-                                        value: 'Male', child: Text('Male')),
-                                    DropdownMenuItem(
-                                        value: 'Female', child: Text('Female')),
-                                    DropdownMenuItem(
-                                        value: 'Prefer not to say',
-                                        child: Text('Prefer not to say')),
-                                  ],
-                                  onChanged: (value) {
-                                    if (value != null) {
-                                      setState(() => _selectedGender = value);
-                                    }
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Bio ──
-                  const _FormLabel(text: 'Bio'),
-                  const SizedBox(height: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.lightField,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE1E4E8)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        TextField(
-                          controller: _bioController,
-                          maxLines: 4,
-                          maxLength: 140,
-                          style: const TextStyle(
-                            color: AppColors.lightText,
-                            fontSize: 15,
-                          ),
-                          decoration: const InputDecoration(
-                            hintText: 'Tell us about yourself…',
-                            hintStyle: TextStyle(
-                              color: AppColors.lightMuted,
-                              fontSize: 14,
-                            ),
-                            border: InputBorder.none,
-                            counterText: '',
-                            contentPadding: EdgeInsets.all(16),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 12, bottom: 8),
-                          child: Text(
-                            '$_bioLength/140',
-                            style: const TextStyle(
-                              color: AppColors.lightMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // ── Sports Level Section ──
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.lightBorder),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Sports level',
-                    style: TextStyle(
-                      color: AppColors.lightText,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // ── Tennis sport level row ──
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: AppColors.lightField,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE1E4E8)),
-                    ),
-                    child: Row(
-                      children: [
-                        // Racket icon + Tennis label
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Iconify(
-                            Ph.tennis_ball_fill,
-                            size: 18,
-                            color: AppColors.lightText,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Tennis',
-                          style: TextStyle(
-                            color: AppColors.lightText,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.neonGreen.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Beginner',
-                            style: TextStyle(
-                              color: AppColors.darkText,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.lightBorder),
-                          ),
-                          child: const Iconify(
-                            Ph.pencil_simple,
-                            size: 13,
-                            color: AppColors.lightText,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // ── + Add Game button ──
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Iconify(Ph.plus, size: 18),
-                      label: const Text('Add Game'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.lightText,
-                        side: BorderSide(
-                          color: AppColors.lightBorder,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        textStyle: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
+            _buildField(t('fullName'), _nameCtrl, hint: t('enterFullName')),
+            const SizedBox(height: 16),
+            _buildField(t('username'), _usernameCtrl, hint: t('usernameHint')),
+            const SizedBox(height: 16),
+            _buildField(t('bio'), _bioCtrl, hint: t('tellUsAboutYourself'), maxLines: 3),
+            const SizedBox(height: 16),
+            _buildField(t('phoneNumber'), _phoneCtrl, hint: t('phoneHint'), keyboardType: TextInputType.phone),
+            const SizedBox(height: 16),
+            _buildField(t('dateOfBirth'), _dobCtrl, hint: t('dobHint')),
           ],
         ),
       ),
     );
   }
-}
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-class _FormLabel extends StatelessWidget {
-  final String text;
-
-  const _FormLabel({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        color: AppColors.lightMuted,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-}
-
-class _FormField extends StatelessWidget {
-  final TextEditingController? controller;
-  final String hint;
-  final String? prefixIcon;
-  final Widget? prefixWidget;
-  final Widget? suffixIcon;
-
-  const _FormField({
-    this.controller,
-    required this.hint,
-    this.prefixIcon,
-    this.prefixWidget,
-    this.suffixIcon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.lightField,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE1E4E8)),
-      ),
-      child: Row(
-        children: [
-          if (prefixWidget != null)
-            prefixWidget!
-          else if (prefixIcon != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Iconify(
-                prefixIcon!,
-                size: 18,
-                color: AppColors.lightMuted,
-              ),
-            ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: const TextStyle(
-                color: AppColors.lightText,
-                fontSize: 15,
-              ),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: const TextStyle(
-                  color: AppColors.lightMuted,
-                  fontSize: 14,
-                ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                isDense: true,
-              ),
+  Widget _buildField(String label, TextEditingController controller, {
+    String? hint,
+    int maxLines = 1,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: AppColors.lightMuted, fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.lightField,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.lightBorder),
+          ),
+          child: TextField(
+            controller: controller,
+            maxLines: maxLines,
+            keyboardType: keyboardType,
+            style: const TextStyle(color: AppColors.lightText, fontSize: 15),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(color: AppColors.lightMuted, fontSize: 14),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             ),
           ),
-          if (suffixIcon != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: suffixIcon,
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

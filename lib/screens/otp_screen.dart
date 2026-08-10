@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../routes.dart';
 import '../widgets/court_plus_logo.dart';
-import '../presentation/providers/supabase_provider.dart';
 import '../presentation/providers/auth_provider.dart';
+import '../l10n/app_strings.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key});
@@ -23,16 +23,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
-  int _resendSeconds = 30;
-  bool _timerActive = true;
+  int _resendSeconds = 60;
+  bool _timerActive = false; // ← starts false, no auto-resend
 
   @override
   void initState() {
     super.initState();
-    _startResendTimer();
     for (final f in _focusNodes) {
       f.addListener(() => setState(() {}));
     }
+    // Do NOT auto-send OTP on load. Resend only on user tap.
   }
 
   @override
@@ -46,11 +46,25 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     super.dispose();
   }
 
-  void _startResendTimer() {
+  /// Starts the 60s cooldown timer and sends a new OTP.
+  Future<void> _onResendTap() async {
+    if (_timerActive) return;
+
     setState(() {
-      _resendSeconds = 30;
+      _resendSeconds = 60;
       _timerActive = true;
     });
+
+    final error = await ref.read(authStateProvider.notifier).resendOtp();
+    if (error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+      if (mounted) setState(() => _timerActive = false);
+      return;
+    }
+
+    // Start 60s countdown
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
@@ -75,82 +89,96 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final code = _controllers.map((c) => c.text).join();
     if (code.length != 6) return;
 
-    final supabase = ref.read(supabaseServiceProvider);
-    final result = await supabase.verifyOtp(phone: '+201****8964', code: code);
-    result.fold(
-      (_) {
-        if (mounted) Navigator.of(context).pushNamed(Routes.profileSetup);
-      },
-      (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message), backgroundColor: Colors.red),
-          );
-        }
-      },
-    );
+    final auth = ref.read(authStateProvider.notifier);
+    final state = ref.read(authStateProvider);
+    final destination = state.otpSentTo;
+    if (destination == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No verification code was sent. Please go back and try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    final error = await auth.verifyOtp(email: destination, code: code);
+    if (error == null) {
+      if (mounted) Navigator.of(context).pushNamed(Routes.profileSetup);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isLoading = ref.watch(authLoadingProvider);
-    final screenHeight = MediaQuery.of(context).size.height;
+    @override
+    Widget build(BuildContext context) {
+      final isLoading = ref.watch(authLoadingProvider);
+      final screenHeight = MediaQuery.of(context).size.height;
+      final t = AppStrings.of(context).t;
+      final destination = ref.watch(authStateProvider).otpSentTo;
 
-    return Scaffold(
-      backgroundColor: kBackground,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0, left: 0, right: 0, height: screenHeight * 0.5,
-            child: ShaderMask(
-              shaderCallback: (rect) => const LinearGradient(
-                begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                colors: [Colors.white, Colors.transparent], stops: [0.35, 1.0],
-              ).createShader(rect),
-              blendMode: BlendMode.dstIn,
-              child: Image.asset('assets/images/player.png', fit: BoxFit.cover, alignment: Alignment.topCenter),
+      return Scaffold(
+        backgroundColor: kBackground,
+        body: Stack(
+          children: [
+            Positioned(
+              top: 0, left: 0, right: 0, height: screenHeight * 0.5,
+              child: ShaderMask(
+                shaderCallback: (rect) => const LinearGradient(
+                  begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                  colors: [Colors.white, Colors.transparent], stops: [0.35, 1.0],
+                ).createShader(rect),
+                blendMode: BlendMode.dstIn,
+                child: Image.asset('assets/images/player.png', fit: BoxFit.cover, alignment: Alignment.topCenter),
+              ),
             ),
-          ),
-          Positioned(
-            top: 0, left: 0, right: 0, height: screenHeight * 0.5,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, kBackground.withValues(alpha: 0.55), kBackground],
-                    stops: const [0.0, 0.65, 1.0],
+            Positioned(
+              top: 0, left: 0, right: 0, height: screenHeight * 0.5,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, kBackground.withValues(alpha: 0.55), kBackground],
+                      stops: const [0.0, 0.65, 1.0],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                const Center(child: CourtPlusLogo(height: 34)),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Input OTP for Account to\nSign up',
+            SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  const Center(child: CourtPlusLogo(height: 34)),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(t('inputOtp'),
+                            textAlign: TextAlign.left,
+                            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, height: 1.2)),
+                        const SizedBox(height: 12),
+                        RichText(
                           textAlign: TextAlign.left,
-                          style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, height: 1.2)),
-                      const SizedBox(height: 12),
-                      RichText(
-                        textAlign: TextAlign.left,
-                        text: const TextSpan(
-                          style: TextStyle(color: Colors.white60, fontSize: 14, height: 1.45),
-                          children: [
-                            TextSpan(text: 'Court+ just sent you a 6-Digit Code to '),
-                            TextSpan(text: '+201****8964', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            TextSpan(text: ' please check your messages & enter the code below.'),
-                          ],
+                          text: TextSpan(
+                            style: const TextStyle(color: Colors.white60, fontSize: 14, height: 1.45),
+                            children: [
+                              TextSpan(text: t('otpSentMessage')),
+                              TextSpan(
+                                text: destination ?? 'your email',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              TextSpan(text: t('otpCheckMessages')),
+                            ],
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 28),
                       Row(
                         children: List.generate(6, (index) => Expanded(
@@ -173,14 +201,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                           ),
                           child: isLoading
                               ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                              : const Text('Sign up', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              : Text(t('signUp'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
                       const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity, height: 54,
                         child: OutlinedButton(
-                          onPressed: !_timerActive ? _startResendTimer : null,
+                          onPressed: !_timerActive ? _onResendTap : null,
                           style: OutlinedButton.styleFrom(
                             backgroundColor: kActiveBoxFill,
                             disabledBackgroundColor: kActiveBoxFill,
@@ -189,8 +217,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                           ),
                           child: Text(
                             _timerActive
-                                ? 'Resend OTP code in 00:${_resendSeconds.toString().padLeft(2, '0')}'
-                                : 'Resend OTP code',
+                                ? '${t('resendOtpTimer')}${_resendSeconds.toString().padLeft(2, '0')}'
+                                : t('resendOtp'),
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kNeonGreen),
                           ),
                         ),
@@ -203,8 +231,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pushReplacementNamed(Routes.signup),
-                    child: const Text("Didn't receive code? Resend",
-                        style: TextStyle(color: kNeonGreen, fontSize: 14, fontWeight: FontWeight.w600)),
+                    child: Text(t('didntReceiveCode'),
+                        style: const TextStyle(color: kNeonGreen, fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],

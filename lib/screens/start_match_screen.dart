@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../routes.dart';
 import '../theme/app_theme.dart';
+import '../presentation/providers/match_provider.dart';
 
+/// "New Match" screen — pixel-matched to the Court+ App Workflows PDF.
 class StartMatchScreen extends StatefulWidget {
   const StartMatchScreen({super.key});
 
@@ -12,430 +15,518 @@ class StartMatchScreen extends StatefulWidget {
 }
 
 class _StartMatchScreenState extends State<StartMatchScreen> {
-  int _currentStep = 1;
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = const TimeOfDay(hour: 10, minute: 0);
-  int _selectedCourt = 0;
-  int _selectedLevel = -1;
-  int _selectedGender = 0;
+  // Game & type
+  int _selectedGame = 0; // 0=Padel, 1=Tennis
+  int _selectedType = 1; // 0=1v1, 1=2v2 (2v2 selected in PDF)
 
-  static const _levels = ['Beginner', 'Intermediate', 'Advanced'];
-  static const _genders = ['Male', 'Female', 'Any'];
-  static const _stepLabels = ['Date', 'Time', 'Loc.', 'Level', 'Gender'];
+  // Players
+  final List<Map<String, String>> _players = [
+    {'name': 'Khalid Al-Mansoor', 'avatar': 'https://i.pravatar.cc/150?u=khalid1'},
+    {'name': 'Khalid Hassan', 'avatar': 'https://i.pravatar.cc/150?u=khalid2'},
+  ];
+
+  // Date & time
+  DateTime _selectedDate = DateTime.now();
+  String? _selectedTimeStr;
+  String? _selectedLocation;
+
+  // Level & gender
+  int? _selectedLevel;
+  int? _selectedGender; // 0=Female, 1=Male
+  bool _acceptMembers = true;
+
+  // Step tracking: 0=form, 1=date, 2=time, 3=location, 4=level modal, 5=gender modal, 6=review
+  int _step = 0;
+
+  static const _levels = [
+    'Beginner', 'Intermediate', 'Intermediate high', 'Advanced', 'Competition',
+  ];
+  static const _locations = [
+    ('Tennis Outdoor Court A', 'Eagle Sport Center', Ph.tennis_ball),
+    ('Pro Tennis Arena', 'Al Malaz Club', Ph.tennis_ball),
+    ('Elite Padel Court', 'Olaya District', Ph.target),
+    ('Squash Pro Court', 'King Fahd District', Ph.circle),
+  ];
+  static const _timeSlots = [
+    '06:00 AM', '07:00 AM', '08:00 AM', '09:00 AM',
+    '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM',
+    '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM',
+    '06:00 PM', '07:00 PM', '08:00 PM', '09:00 PM',
+    '10:00 PM', '11:00 PM',
+  ];
+
+  bool get _isComplete =>
+      _selectedTimeStr != null &&
+      _selectedLocation != null &&
+      _selectedLevel != null &&
+      _selectedGender != null;
 
   @override
   Widget build(BuildContext context) {
-    final canContinue = _currentStep < 5 ||
-        (_currentStep == 5 && _selectedLevel >= 0);
-
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
-      appBar: AppBar(
-        backgroundColor: AppColors.darkBg,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Iconify(Ph.arrow_left, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              leading: IconButton(
+                icon: const Iconify(Ph.arrow_left, color: AppColors.lightText),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: Text(
+                _step == 6 ? 'Review Match' : 'New Match',
+                style: const TextStyle(
+                    color: AppColors.lightText, fontWeight: FontWeight.w700),
+              ),
+              centerTitle: true,
+            ),
+            Expanded(
+              child: _step == 0
+                  ? _buildForm()
+                  : _step == 1
+                      ? _buildDatePicker()
+                      : _step == 2
+                          ? _buildTimePicker()
+                          : _step == 3
+                              ? _buildLocationPicker()
+                              : _step == 6
+                                  ? _buildReview()
+                                  : const SizedBox.shrink(),
+            ),
+            if (_step <= 3 && _step != 0) _buildConfirmBar(),
+          ],
         ),
-        title: const Text(
-          'Start a Match',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-        ),
-        centerTitle: true,
       ),
-      body: Column(
+    );
+  }
+
+  // ── Main Form ──
+  Widget _buildForm() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Step indicator ──
+          // Select Game
+          const _SectionLabel('Select Game'),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _gameChip(0, Ph.target, 'Padel')),
+              const SizedBox(width: 10),
+              Expanded(child: _gameChip(1, Ph.tennis_ball, 'Tennis')),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Game Type
+          const _SectionLabel('Game Type'),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _typeChip(0, '1 vs 1')),
+              const SizedBox(width: 10),
+              Expanded(child: _typeChip(1, '2 vs 2')),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Add players
+          const _SectionLabel('Add players to your match'),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              // Filled slots
+              ..._players.map((p) => Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 22,
+                          backgroundColor: AppColors.lightField,
+                          child: const Icon(Icons.person,
+                              size: 22, color: AppColors.lightMuted),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(p['name']!,
+                            style: const TextStyle(
+                                color: AppColors.lightText,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )),
+              // Empty slots
+              ...List.generate(4 - _players.length, (i) => Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: AppColors.lightField,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: AppColors.lightBorder, width: 1.5),
+                          ),
+                          child: const Icon(Icons.add,
+                              size: 22, color: AppColors.lightMuted),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text('Available',
+                            style: TextStyle(
+                                color: AppColors.lightMuted, fontSize: 11)),
+                      ],
+                    ),
+                  )),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Form fields
+          _formField(Ph.calendar, 'Date', 'Pick a day',
+              onTap: () => setState(() => _step = 1)),
+          const SizedBox(height: 12),
+          _formField(Ph.map_pin, 'Location', 'Select Location',
+              onTap: () => setState(() => _step = 3)),
+          const SizedBox(height: 12),
+          _formField(
+              Ph.target, 'Match level', _selectedLevel != null ? _levels[_selectedLevel!] : 'Select level',
+              onTap: _showLevelModal),
+          const SizedBox(height: 12),
+          _formField(
+              Ph.gender_male, 'Gender', _selectedGender != null ? (_selectedGender == 0 ? 'Female' : 'Male') : 'Select gender',
+              onTap: _showGenderModal),
+          const SizedBox(height: 12),
+
+          // Members toggle
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(5, (i) {
-                final stepNum = i + 1;
-                final active = stepNum == _currentStep;
-                final done = stepNum < _currentStep;
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _stepCircle(stepNum, active, done),
-                    if (i < 4)
-                      Container(
-                        width: 28,
-                        height: 2,
-                        color: done
-                            ? AppColors.neonGreen
-                            : AppColors.darkBorder,
-                      ),
-                  ],
-                );
-              }),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.lightField,
+              borderRadius: BorderRadius.circular(14),
             ),
-          ),
-          // ── Step label row ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(5, (i) {
-                final done = i + 1 <= _currentStep;
-                return Text(
-                  _stepLabels[i],
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Iconify(Ph.lock, size: 20, color: AppColors.lightText),
+              title: const Text('Members need to be accepted',
                   style: TextStyle(
-                    color: done ? AppColors.neonGreen : Colors.white30,
-                    fontSize: 11,
-                    fontWeight: done ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                );
-              }),
+                      color: AppColors.lightText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500)),
+              value: _acceptMembers,
+              activeThumbColor: AppColors.neonGreen,
+              activeTrackColor: AppColors.neonGreen.withValues(alpha: 0.4),
+              onChanged: (v) => setState(() => _acceptMembers = v),
             ),
           ),
-          const SizedBox(height: 16),
-          const Divider(color: AppColors.darkBorder, height: 1),
-          // ── Content area ──
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
-              child: _buildStepContent(),
+          const SizedBox(height: 24),
+
+          // Create match button (black bg, green text per PDF)
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: _isComplete ? () => setState(() => _step = 6) : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.darkSlate,
+                foregroundColor: AppColors.neonGreen,
+                disabledBackgroundColor: AppColors.lightField,
+                disabledForegroundColor: AppColors.lightMuted,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Create match',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
       ),
-      // ── Fixed continue button ──
-      bottomSheet: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        decoration: const BoxDecoration(
-          color: AppColors.darkBg,
-          border:
-              Border(top: BorderSide(color: AppColors.darkBorder, width: 0.5)),
-        ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 54,
-          child: ElevatedButton(
-            onPressed: canContinue ? _onContinue : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.neonGreen,
-              foregroundColor: AppColors.darkText,
-              disabledBackgroundColor: AppColors.darkField,
-              disabledForegroundColor: Colors.white30,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: AppTheme.fontFamily,
-              ),
-            ),
-            child: Text(_currentStep == 5 ? 'Continue' : 'Continue'),
+    );
+  }
+
+  Widget _gameChip(int idx, String icon, String label) {
+    final selected = _selectedGame == idx;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedGame = idx),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.neonGreen : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.neonGreen : AppColors.lightBorder,
           ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Iconify(icon,
+                size: 22,
+                color: selected ? AppColors.darkText : AppColors.lightMuted),
+            const SizedBox(width: 8),
+            Text(label,
+                style: TextStyle(
+                    color: selected ? AppColors.darkText : AppColors.lightText,
+                    fontSize: 15,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildStepContent() {
-    switch (_currentStep) {
-      case 1:
-        return _datePicker();
-      case 2:
-        return _timePicker();
-      case 3:
-        return _courtSelector();
-      case 4:
-        return _genderSelector();
-      case 5:
-        return _levelSelector();
-      default:
-        return const SizedBox.shrink();
-    }
+  Widget _typeChip(int idx, String label) {
+    final selected = _selectedType == idx;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedType = idx),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.neonGreen : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.neonGreen : AppColors.lightBorder,
+          ),
+        ),
+        child: Text(label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: selected ? AppColors.darkText : AppColors.lightText,
+                fontSize: 15,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
+      ),
+    );
   }
 
-  // ── Step 1: Date picker ──
-  Widget _datePicker() {
-    final now = DateTime.now();
-    final days = List.generate(14, (i) => now.add(Duration(days: i)));
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Select Date',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+  Widget _formField(String icon, String label, String value,
+      {required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.lightField,
+          borderRadius: BorderRadius.circular(14),
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'Choose a date for your match',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.darkField,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.darkBorder),
-          ),
-          child: Column(
-            children: [
-              // Month header
-              Row(
+        child: Row(
+          children: [
+            Iconify(icon, color: AppColors.lightText, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Iconify(Ph.calendar,
-                      color: AppColors.neonGreen, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    _monthYear(_selectedDate),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text(label,
+                      style: const TextStyle(
+                          color: AppColors.lightMuted, fontSize: 12)),
+                  const SizedBox(height: 2),
+                  Text(value,
+                      style: const TextStyle(
+                          color: AppColors.lightText,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
-              const SizedBox(height: 16),
-              // Day chips
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: days.map((day) {
-                  final selected = day.day == _selectedDate.day &&
-                      day.month == _selectedDate.month;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedDate = day),
-                    child: Container(
-                      width: 48,
-                      height: 64,
-                      decoration: BoxDecoration(
+            ),
+            const Iconify(Ph.caret_right,
+                color: AppColors.lightMuted, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Date Picker ──
+  Widget _buildDatePicker() {
+    final now = DateTime.now();
+    final days = List.generate(30, (i) => now.add(Duration(days: i)));
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+          child: Row(
+            children: [
+              const Iconify(Ph.calendar, color: AppColors.lightText, size: 20),
+              const SizedBox(width: 8),
+              Text(_monthYear(_selectedDate),
+                  style: const TextStyle(
+                      color: AppColors.lightText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                childAspectRatio: 0.85,
+                mainAxisSpacing: 6,
+                crossAxisSpacing: 6),
+            itemCount: days.length,
+            itemBuilder: (_, i) {
+              final day = days[i];
+              final selected = day.day == _selectedDate.day &&
+                  day.month == _selectedDate.month;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedDate = day),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppColors.neonGreen
+                        : AppColors.lightField,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
                         color: selected
                             ? AppColors.neonGreen
-                            : AppColors.darkSlate,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: selected
-                              ? AppColors.neonGreen
-                              : AppColors.darkBorder,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _weekdayAbbr(day.weekday),
-                            style: TextStyle(
+                            : AppColors.lightBorder),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(_weekdayAbbr(day.weekday),
+                          style: TextStyle(
                               color: selected
                                   ? AppColors.darkText
-                                  : Colors.white60,
-                              fontSize: 10,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${day.day}',
-                            style: TextStyle(
+                                  : AppColors.lightMuted,
+                              fontSize: 10)),
+                      const SizedBox(height: 2),
+                      Text('${day.day}',
+                          style: TextStyle(
                               color: selected
                                   ? AppColors.darkText
-                                  : Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
+                                  : AppColors.lightText,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  // ── Step 2: Time picker ──
-  Widget _timePicker() {
-    final slots = [
-      '06:00 AM', '07:00 AM', '08:00 AM', '09:00 AM',
-      '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM',
-      '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM',
-      '06:00 PM', '07:00 PM', '08:00 PM', '09:00 PM',
-      '10:00 PM', '11:00 PM',
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Select Time Slot',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Pick your preferred time',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.darkField,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.darkBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Iconify(Ph.clock, color: AppColors.neonGreen, size: 20),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Available Slots',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Wrap(
+  // ── Time Picker ──
+  Widget _buildTimePicker() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Select Time Slot',
+              style: TextStyle(
+                  color: AppColors.lightText,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          const Text('Pick your preferred time',
+              style: TextStyle(color: AppColors.lightMuted, fontSize: 14)),
+          const SizedBox(height: 20),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: List.generate(slots.length, (i) {
-                  final selected = _selectedTime.hour == 6 + i;
+                children: List.generate(_timeSlots.length, (i) {
+                  final selected = _selectedTimeStr == _timeSlots[i];
                   return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedTime =
-                            TimeOfDay(hour: 6 + i, minute: 0);
-                      });
-                    },
+                    onTap: () =>
+                        setState(() => _selectedTimeStr = _timeSlots[i]),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
+                          horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
                         color: selected
                             ? AppColors.neonGreen
-                            : AppColors.darkSlate,
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: selected
-                              ? AppColors.neonGreen
-                              : AppColors.darkBorder,
-                        ),
+                            color: selected
+                                ? AppColors.neonGreen
+                                : AppColors.lightBorder),
                       ),
-                      child: Text(
-                        slots[i],
-                        style: TextStyle(
-                          color: selected
-                              ? AppColors.darkText
-                              : Colors.white,
-                          fontSize: 13,
-                          fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                      ),
+                      child: Text(_timeSlots[i],
+                          style: TextStyle(
+                              color: selected
+                                  ? AppColors.darkText
+                                  : AppColors.lightText,
+                              fontSize: 13,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500)),
                     ),
                   );
                 }),
               ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  // ── Step 3: Court / Location selector ──
-  Widget _courtSelector() {
-    const courts = [
-      ('Grand Slam Court', 'Riyadh Sports Center', Ph.tennis_ball),
-      ('Pro Tennis Arena', 'Al Malaz Club', Ph.tennis_ball),
-      ('Elite Padel Court', 'Olaya District', Ph.target),
-      ('Squash Pro Court', 'King Fahd District', Ph.circle),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  // ── Location Picker ──
+  Widget _buildLocationPicker() {
+    return ListView(
+      padding: const EdgeInsets.all(20),
       children: [
-        const Text(
-          'Select Court',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Choose your location',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        ...List.generate(courts.length, (i) {
-          final selected = i == _selectedCourt;
-          final court = courts[i];
+        const Text('Select Court',
+            style: TextStyle(
+                color: AppColors.lightText,
+                fontSize: 18,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        ...List.generate(_locations.length, (i) {
+          final loc = _locations[i];
+          final selected = _selectedLocation == loc.$1;
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: GestureDetector(
-              onTap: () => setState(() => _selectedCourt = i),
+              onTap: () => setState(() => _selectedLocation = loc.$1),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.neonGreen.withValues(alpha: 0.08)
-                      : AppColors.darkField,
+                  color:
+                      selected ? AppColors.neonGreen.withValues(alpha: 0.08) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: selected ? AppColors.neonGreen : AppColors.darkBorder,
-                    width: selected ? 1.5 : 1,
-                  ),
+                      color: selected ? AppColors.neonGreen : AppColors.lightBorder,
+                      width: selected ? 1.5 : 1),
                 ),
                 child: Row(
                   children: [
-                    Iconify(court.$3,
+                    Iconify(loc.$3,
                         color: selected
                             ? AppColors.neonGreen
-                            : Colors.white60,
+                            : AppColors.lightMuted,
                         size: 24),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            court.$1,
-                            style: TextStyle(
-                              color: selected
-                                  ? AppColors.neonGreen
-                                  : Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          Text(loc.$1,
+                              style: TextStyle(
+                                  color: selected
+                                      ? AppColors.neonGreen
+                                      : AppColors.lightText,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600)),
                           const SizedBox(height: 2),
-                          Text(
-                            court.$2,
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 13,
-                            ),
-                          ),
+                          Text(loc.$2,
+                              style: const TextStyle(
+                                  color: AppColors.lightMuted,
+                                  fontSize: 13)),
                         ],
                       ),
                     ),
@@ -445,196 +536,10 @@ class _StartMatchScreenState extends State<StartMatchScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: selected
-                              ? AppColors.neonGreen
-                              : AppColors.darkBorder,
-                          width: selected ? 2 : 1.5,
-                        ),
-                        color: selected
-                            ? AppColors.neonGreen
-                            : Colors.transparent,
-                      ),
-                      child: selected
-                          ? const Icon(Icons.check,
-                              size: 14, color: AppColors.darkText)
-                          : null,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  // ── Step 4: Gender selector ──
-  Widget _genderSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Select Gender',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Set match preference',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        Row(
-          children: List.generate(_genders.length, (i) {
-            final selected = i == _selectedGender;
-            final icons = [Ph.gender_male, Ph.gender_female, Ph.users];
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: i > 0 ? 8 : 0,
-                  right: i < _genders.length - 1 ? 8 : 0,
-                ),
-                child: GestureDetector(
-                  onTap: () => setState(() => _selectedGender = i),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.neonGreen.withValues(alpha: 0.08)
-                          : AppColors.darkField,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: selected
-                            ? AppColors.neonGreen
-                            : AppColors.darkBorder,
-                        width: selected ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Iconify(
-                          icons[i],
-                          size: 28,
-                          color: selected
-                              ? AppColors.neonGreen
-                              : Colors.white60,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _genders[i],
-                          style: TextStyle(
                             color: selected
                                 ? AppColors.neonGreen
-                                : Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-
-  // ── Step 5: Match level ──
-  Widget _levelSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Match Level',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Select your playing level',
-          style: TextStyle(color: Colors.white60, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        ...List.generate(_levels.length, (i) {
-          final selected = i == _selectedLevel;
-          final icons = [Ph.student, Ph.chart_bar, Ph.lightning];
-          final descs = [
-            'New to the game, learning the basics',
-            'Can rally and play with consistent form',
-            'Experienced with strong game strategy',
-          ];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: GestureDetector(
-              onTap: () => setState(() => _selectedLevel = i),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.neonGreen.withValues(alpha: 0.08)
-                      : AppColors.darkField,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color:
-                        selected ? AppColors.neonGreen : AppColors.darkBorder,
-                    width: selected ? 1.5 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Iconify(icons[i],
-                        color: selected
-                            ? AppColors.neonGreen
-                            : Colors.white60,
-                        size: 26),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _levels[i],
-                            style: TextStyle(
-                              color: selected
-                                  ? AppColors.neonGreen
-                                  : Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            descs[i],
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected
-                              ? AppColors.neonGreen
-                              : AppColors.darkBorder,
-                          width: selected ? 2 : 1.5,
-                        ),
+                                : AppColors.lightBorder,
+                            width: selected ? 2 : 1.5),
                         color: selected
                             ? AppColors.neonGreen
                             : Colors.transparent,
@@ -651,59 +556,412 @@ class _StartMatchScreenState extends State<StartMatchScreen> {
           );
         }),
       ],
+    );
+  }
+
+  // ── Review Screen ──
+  Widget _buildReview() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _reviewRow(Ph.target, 'Game', _selectedGame == 0 ? 'Padel' : 'Tennis'),
+          const SizedBox(height: 12),
+          _reviewRow(Ph.users, 'Type', _selectedType == 0 ? '1 vs 1' : '2 vs 2'),
+          const SizedBox(height: 12),
+          if (_players.isNotEmpty) ...[
+            _reviewRow(Ph.user_plus, 'Players', _players.map((p) => p['name']!).join(', ')),
+            const SizedBox(height: 12),
+          ],
+          _reviewRow(Ph.calendar, 'Date', _formatDate(_selectedDate)),
+          const SizedBox(height: 12),
+          _reviewRow(Ph.clock, 'Time', _selectedTimeStr ?? ''),
+          const SizedBox(height: 12),
+          _reviewRow(Ph.map_pin, 'Location', _selectedLocation ?? ''),
+          const SizedBox(height: 12),
+          _reviewRow(Ph.target, 'Level', _levels[_selectedLevel!]),
+          const SizedBox(height: 12),
+          _reviewRow(Ph.gender_male, 'Gender',
+              _selectedGender == 0 ? 'Female' : 'Male'),
+          const SizedBox(height: 12),
+          _reviewRow(Ph.shield_check, 'Accept',
+              _acceptMembers ? 'Required' : 'Not required'),
+          const SizedBox(height: 32),
+
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final isLoading = ref.watch(matchCreationProvider).isLoading;
+                return ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          // Populate MatchCreationNotifier with all local state
+                          final notifier = ref.read(matchCreationProvider.notifier);
+                          notifier.setMatchLevel(_levels[_selectedLevel ?? 0]);
+                          notifier.setGender(
+                              _selectedGender == 0 ? 'Female' : 'Male');
+                          notifier.setDate(_selectedDate);
+                          notifier.setPlayerCount(
+                              _selectedType == 1 ? 4 : 2);
+
+                          // Attempt to set court info if available
+                          if (_selectedLocation != null) {
+                            // We use the name as both court and center placeholder
+                            // since StartMatchScreen doesn't track court IDs
+                            notifier.setCourt(
+                              _selectedLocation!.hashCode.toString(),
+                              _selectedLocation!,
+                              '',
+                              _selectedGame == 0 ? 'Padel' : 'Tennis',
+                            );
+                          }
+
+                          // Call createMatch (inserts into Supabase matches table)
+                          final error = await notifier.createMatch();
+                          if (!mounted || !context.mounted) return;
+                          if (error == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Match created successfully!'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              Routes.home,
+                              (route) => false,
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to create match: $error'),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkSlate,
+                    foregroundColor: AppColors.neonGreen,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.neonGreen,
+                          ),
+                        )
+                      : const Text('Create match',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Confirm bar for sub-steps ──
+  Widget _buildConfirmBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.lightBorder)),
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 54,
+        child: ElevatedButton(
+          onPressed: () => setState(() => _step = 0),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.darkSlate,
+            foregroundColor: AppColors.neonGreen,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Text('Confirm',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+  }
+
+  // ── Level modal (PDF: "What's your level?") ──
+  void _showLevelModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        int temp = _selectedLevel ?? 0;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) => Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text("What's your level?",
+                          style: TextStyle(
+                              color: AppColors.lightText,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: const BoxDecoration(
+                          color: AppColors.neonGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close,
+                            size: 18, color: AppColors.darkText),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                    'In order to offer you better search results, we need to know your level.',
+                    style:
+                        TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+                const SizedBox(height: 20),
+                ...List.generate(_levels.length, (i) {
+                  final selected = i == temp;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: GestureDetector(
+                      onTap: () => setSheetState(() => temp = i),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppColors.neonGreen.withValues(alpha: 0.08)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: selected
+                                  ? AppColors.neonGreen
+                                  : AppColors.lightBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(_levels[i],
+                                  style: TextStyle(
+                                      color: selected
+                                          ? AppColors.neonGreen
+                                          : AppColors.lightText,
+                                      fontSize: 15)),
+                            ),
+                            Icon(
+                                selected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_off,
+                                color: selected
+                                    ? AppColors.neonGreen
+                                    : AppColors.lightMuted,
+                                size: 22),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _selectedLevel = temp);
+                      Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.darkSlate,
+                      foregroundColor: AppColors.neonGreen,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Next',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Gender modal (PDF: Female/Male + Save) ──
+  void _showGenderModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        int temp = _selectedGender ?? 0;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) => Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Gender',
+                    style: TextStyle(
+                        color: AppColors.lightText,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _genderOption(
+                          ctx, setSheetState, 0, Ph.gender_female, 'Female', temp),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _genderOption(
+                          ctx, setSheetState, 1, Ph.gender_male, 'Male', temp),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _selectedGender = temp);
+                      Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.darkSlate,
+                      foregroundColor: AppColors.neonGreen,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Save',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _genderOption(BuildContext ctx, StateSetter setSheetState, int idx,
+      String icon, String label, int current) {
+    final selected = idx == current;
+    return GestureDetector(
+      onTap: () => setSheetState(() => current = idx), // ignore: invalid_use_of_protected_member
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.neonGreen.withValues(alpha: 0.08)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+              color: selected ? AppColors.neonGreen : AppColors.lightBorder,
+              width: selected ? 1.5 : 1),
+        ),
+        child: Column(
+          children: [
+            Iconify(icon,
+                size: 32,
+                color: selected ? AppColors.neonGreen : AppColors.lightMuted),
+            const SizedBox(height: 8),
+            Text(label,
+                style: TextStyle(
+                    color: selected ? AppColors.neonGreen : AppColors.lightText,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
     );
   }
 
   // ── Helpers ──
-  Widget _stepCircle(int step, bool active, bool done) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: done
-            ? AppColors.neonGreen
-            : active
-                ? AppColors.neonGreen.withValues(alpha: 0.15)
-                : AppColors.darkField,
-        border: Border.all(
-          color: active || done ? AppColors.neonGreen : AppColors.darkBorder,
-          width: active ? 2 : 1.5,
+  Widget _reviewRow(String icon, String label, String value) {
+    return Row(
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: AppColors.lightField,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Iconify(icon, size: 16, color: AppColors.lightText),
         ),
-      ),
-      child: Center(
-        child: done
-            ? const Icon(Icons.check, size: 16, color: AppColors.darkText)
-            : Text(
-                '$step',
-                style: TextStyle(
-                  color: active ? AppColors.neonGreen : Colors.white60,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-      ),
+        const SizedBox(width: 12),
+        Text(label,
+            style: const TextStyle(color: AppColors.lightMuted, fontSize: 13)),
+        const Spacer(),
+        Text(value,
+            style: const TextStyle(
+                color: AppColors.lightText,
+                fontSize: 14,
+                fontWeight: FontWeight.w600)),
+      ],
     );
   }
 
-  void _onContinue() {
-    if (_currentStep < 5) {
-      setState(() => _currentStep++);
-    } else {
-      Navigator.of(context).pushNamed(Routes.addPlayers);
-    }
-  }
-
+  String _formatDate(DateTime d) => '${d.day} ${_monthYear(d)} ${d.year}';
   String _monthYear(DateTime d) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
     ];
-    return '${months[d.month - 1]} ${d.year}';
+    return months[d.month - 1];
   }
-
   String _weekdayAbbr(int wd) {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
     return days[wd - 1];
   }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text,
+      style: const TextStyle(
+          color: AppColors.lightMuted,
+          fontSize: 13,
+          fontWeight: FontWeight.w600));
 }

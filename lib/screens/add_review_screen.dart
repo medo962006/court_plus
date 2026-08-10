@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
+import '../routes.dart';
 import '../theme/app_theme.dart';
 
 class AddReviewScreen extends StatefulWidget {
@@ -125,29 +126,7 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
               height: 54,
               child: ElevatedButton(
                 onPressed: _rating > 0
-                    ? () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            content: const Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Iconify(Ph.check_circle, size: 60, color: AppColors.neonGreen),
-                                SizedBox(height: 16),
-                                Text('Thank you!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text('Your review has been submitted.', textAlign: TextAlign.center),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-                                child: const Text('Back to Home'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
+                    ? () => Navigator.of(context).pushNamed(Routes.thankYou)
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _rating > 0 ? AppColors.lightText : AppColors.lightField,

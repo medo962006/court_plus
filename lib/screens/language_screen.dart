@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../routes.dart';
 import '../theme/app_theme.dart';
 import '../widgets/court_plus_logo.dart';
 import '../widgets/country_flag.dart';
+import '../main.dart';
 
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
@@ -13,6 +15,19 @@ class LanguageScreen extends StatefulWidget {
 
 class _LanguageScreenState extends State<LanguageScreen> {
   int _selected = 1; // 0 = Arabic, 1 = English
+
+  Future<void> _onDone() async {
+    final langCode = _selected == 0 ? 'ar' : 'en';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('language', langCode);
+
+    if (mounted) {
+      // Find the _CourtPlusAppState and set locale
+      final app = context.findAncestorStateOfType<CourtPlusAppState>();
+      app?.setLocale(langCode);
+      Navigator.of(context).pushNamed(Routes.onboarding);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +65,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
               ),
               const Spacer(),
               ElevatedButton(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed(Routes.onboarding),
+                onPressed: _onDone,
                 child: const Text('Done'),
               ),
               const SizedBox(height: 16),

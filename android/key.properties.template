@@ -1,0 +1,14 @@
+# Release Build Configuration for court+
+# 
+# 1. Generate a signing key:
+#    keytool -genkey -v -keystore court-plus-upload.jks \
+#      -keyalg RSA -keysize 2048 -validity 10000 \
+#      -alias court-plus-key -storetype JKS
+#
+# 2. Place court-plus-upload.jks in android/app/
+#
+# 3. Fill in passwords below (keep this file SECRET, never commit)
+storePassword=your-store-password
+keyPassword=your-key-password
+keyAlias=court-plus-key
+storeFile=court-plus-upload.jks

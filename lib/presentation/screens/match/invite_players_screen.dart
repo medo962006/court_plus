@@ -5,62 +5,34 @@ import 'package:iconify_flutter/icons/ph.dart';
 
 import '../../../theme/app_theme.dart';
 import '../../../routes.dart';
+import '../../../services/models.dart';
 import '../../providers/match_provider.dart';
+import '../../providers/supabase_provider.dart';
 
-// ─── Mock player data ───
+// ─── Player search from Supabase profiles ───
 
-final class MockPlayer {
+/// A display-ready player item built from a Supabase UserProfile.
+class PlayerSearchResult {
   final String userId;
   final String name;
   final String handle;
   final String level;
 
-  const MockPlayer({
+  const PlayerSearchResult({
     required this.userId,
     required this.name,
     required this.handle,
-    required this.level,
+    this.level = 'Intermediate',
   });
-}
 
-const _mockPlayers = [
-  MockPlayer(
-    userId: 'u1',
-    name: 'Levi Leon',
-    handle: 'levilleon',
-    level: 'Advanced',
-  ),
-  MockPlayer(
-    userId: 'u2',
-    name: 'Hafez S.',
-    handle: 'Hafezs',
-    level: 'Intermediate',
-  ),
-  MockPlayer(
-    userId: 'u3',
-    name: 'Sara M.',
-    handle: 'sara_m',
-    level: 'Intermediate',
-  ),
-  MockPlayer(
-    userId: 'u4',
-    name: 'Khaled A.',
-    handle: 'khaled9',
-    level: 'Advanced',
-  ),
-  MockPlayer(
-    userId: 'u5',
-    name: 'Mohammed Ahmed',
-    handle: 'm_ahmed',
-    level: 'Beginner',
-  ),
-  MockPlayer(
-    userId: 'u6',
-    name: 'Nora R.',
-    handle: 'nora_r',
-    level: 'Beginner',
-  ),
-];
+  factory PlayerSearchResult.fromProfile(UserProfile profile) {
+    return PlayerSearchResult(
+      userId: profile.id,
+      name: profile.fullName.isNotEmpty ? profile.fullName : profile.username,
+      handle: profile.username,
+    );
+  }
+}
 
 // ─── Screen ───
 
@@ -74,14 +46,50 @@ class InvitePlayersScreen extends ConsumerStatefulWidget {
 
 class _InvitePlayersScreenState extends ConsumerState<InvitePlayersScreen> {
   final TextEditingController _searchController = TextEditingController();
+  List<PlayerSearchResult> _searchResults = [];
+  bool _isSearching = false;
 
-  List<MockPlayer> get _filteredPlayers {
-    final q = _searchController.text.trim().toLowerCase();
-    if (q.isEmpty) return _mockPlayers;
-    return _mockPlayers.where((p) {
-      return p.name.toLowerCase().contains(q) ||
-          p.handle.toLowerCase().contains(q);
-    }).toList();
+  /// Search profiles from Supabase by name or username.
+  Future<void> _searchProfiles(String query) async {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+    try {
+      final service = ref.read(supabaseServiceProvider);
+      // Fetch profiles matching the search term (ILIKE on full_name or username)
+      final response = await service.client
+          .from('profiles')
+          .select('id, full_name, username')
+          .or('full_name.ilike.%$q%,username.ilike.%$q%')
+          .limit(20);
+
+      final results = (response as List)
+          .map((e) => PlayerSearchResult(
+                userId: e['id'] as String? ?? '',
+                name: e['full_name'] as String? ?? '',
+                handle: e['username'] as String? ?? '',
+              ))
+          .where((r) => r.userId.isNotEmpty)
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isSearching = false);
+      }
+    }
   }
 
   @override
@@ -134,7 +142,7 @@ class _InvitePlayersScreenState extends ConsumerState<InvitePlayersScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: TextField(
               controller: _searchController,
-              onChanged: (_) => setState(() {}),
+              onChanged: (v) => _searchProfiles(v),
               style: const TextStyle(color: Colors.white, fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search players by name or phone...',
@@ -203,13 +211,15 @@ class _InvitePlayersScreenState extends ConsumerState<InvitePlayersScreen> {
 
           // ── Suggested players list ──
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: _filteredPlayers.length,
+            child: _isSearching
+                ? const Center(child: CircularProgressIndicator(color: AppColors.neonGreen))
+                : ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _searchResults.length,
               separatorBuilder: (context, idx) =>
                   const Divider(color: AppColors.darkBorder, height: 1),
               itemBuilder: (context, index) {
-                final player = _filteredPlayers[index];
+                final player = _searchResults[index];
                 final isInvited =
                     state.invitedPlayerIds.contains(player.userId);
                 return _PlayerRow(
@@ -315,7 +325,7 @@ class _CapacityCard extends StatelessWidget {
 // ─── Player Row ───
 
 class _PlayerRow extends StatelessWidget {
-  final MockPlayer player;
+  final PlayerSearchResult player;
   final bool isInvited;
   final VoidCallback onToggle;
 

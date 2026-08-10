@@ -3,37 +3,40 @@ import 'package:court_plus/core/result.dart';
 import 'package:court_plus/services/models.dart';
 import 'package:court_plus/services/supabase_service.dart';
 import 'package:court_plus/presentation/providers/auth_provider.dart';
+
 /// Hand-rolled test service that replaces mockito.
 class TestableSupabaseService extends SupabaseService {
   TestableSupabaseService() : super.test();
-  Future<Result<void>> Function(String phone)? sendOtpOverride;
+  Future<Result<void>> Function(String email)? sendOtpOverride;
   Future<Result<UserProfile?>> Function({
-    required String phone,
+    required String email,
     required String code,
     String? fullName,
     String? username,
   })? verifyOtpOverride;
   Future<Result<void>> Function()? signOutOverride;
+  Future<Result<UserProfile?>> Function()? signInWithGoogleOverride;
+  Future<Result<UserProfile?>> Function()? signInWithAppleOverride;
 
   @override
-  Future<Result<void>> sendOtp(String phone) =>
-      sendOtpOverride?.call(phone) ?? super.sendOtp(phone);
+  Future<Result<void>> sendOtp(String email) =>
+      sendOtpOverride?.call(email) ?? super.sendOtp(email);
 
   @override
   Future<Result<UserProfile?>> verifyOtp({
-    required String phone,
+    required String email,
     required String code,
     String? fullName,
     String? username,
   }) =>
       verifyOtpOverride?.call(
-        phone: phone,
+        email: email,
         code: code,
         fullName: fullName,
         username: username,
       ) ??
       super.verifyOtp(
-        phone: phone,
+        email: email,
         code: code,
         fullName: fullName,
         username: username,
@@ -42,6 +45,18 @@ class TestableSupabaseService extends SupabaseService {
   @override
   Future<Result<void>> signOut() =>
       signOutOverride != null ? signOutOverride!() : Future.value(Result.success(null));
+
+  @override
+  Future<Result<UserProfile?>> signInWithGoogle() =>
+      signInWithGoogleOverride != null
+          ? signInWithGoogleOverride!()
+          : Future.value(Result.failure(AuthException('Not mocked')));
+
+  @override
+  Future<Result<UserProfile?>> signInWithApple() =>
+      signInWithAppleOverride != null
+          ? signInWithAppleOverride!()
+          : Future.value(Result.failure(AuthException('Not mocked')));
 }
 
 UserProfile _user({
@@ -53,9 +68,6 @@ UserProfile _user({
 
 void main() {
   group('AuthNotifier', () {
-    setUp(() {});
-    tearDown(() {});
-
     group('initial state', () {
       test('starts with default values', () {
         final service = TestableSupabaseService();
@@ -69,13 +81,13 @@ void main() {
     });
 
     group('validateAndSendOtp — validation', () {
-      test('returns error when full name is null', () async {
+      test('returns error when full name is empty', () async {
         final service = TestableSupabaseService();
         final notifier = AuthNotifier(service as dynamic);
         final err = await notifier.validateAndSendOtp(
           fullName: '',
           username: 'valid_user',
-          phone: '+123****7890',
+          email: 'test@example.com',
         );
         expect(err, 'Full name is required');
       });
@@ -86,20 +98,20 @@ void main() {
         final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'ab',
-          phone: '+123****7890',
+          email: 'test@example.com',
         );
         expect(err, 'Username must be at least 3 characters');
       });
 
-      test('returns error when phone is null', () async {
+      test('returns error when email is invalid', () async {
         final service = TestableSupabaseService();
         final notifier = AuthNotifier(service as dynamic);
         final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'valid_user',
-          phone: '',
+          email: 'not-an-email',
         );
-        expect(err, 'Phone number is required');
+        expect(err, 'Enter a valid email address');
       });
 
       test('sends OTP and updates state on success', () async {
@@ -109,11 +121,11 @@ void main() {
         final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'john_doe',
-          phone: '+966****4567',
+          email: 'john@example.com',
         );
         expect(err, isNull);
         expect(notifier.state.isLoading, isFalse);
-        expect(notifier.state.otpSentTo, '+966****4567');
+        expect(notifier.state.otpSentTo, 'john@example.com');
         expect(notifier.state.error, isNull);
       });
 
@@ -125,7 +137,7 @@ void main() {
         final err = await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'john_doe',
-          phone: '+966****4567',
+          email: 'john@example.com',
         );
         expect(err, 'Network error');
         expect(notifier.state.isLoading, isFalse);
@@ -138,7 +150,7 @@ void main() {
         final service = TestableSupabaseService();
         final notifier = AuthNotifier(service as dynamic);
         final err = await notifier.verifyOtp(
-          phone: '+966501234567',
+          email: 'john@example.com',
           code: '12',
         );
         expect(err, 'Enter a valid 6-digit code');
@@ -147,7 +159,7 @@ void main() {
       test('handles verification failure', () async {
         final service = TestableSupabaseService();
         service.verifyOtpOverride = ({
-          required phone,
+          required email,
           required code,
           fullName,
           username,
@@ -155,7 +167,7 @@ void main() {
             Result.failure(AuthException('Invalid code'));
         final notifier = AuthNotifier(service as dynamic);
         final err = await notifier.verifyOtp(
-          phone: '+966501234567',
+          email: 'john@example.com',
           code: '123456',
         );
         expect(err, 'Invalid code');
@@ -164,43 +176,109 @@ void main() {
         expect(notifier.state.isAuthenticated, isFalse);
         expect(notifier.state.user, isNull);
       });
-    });
 
-    group('login', () {
-      test('sends OTP on valid phone', () async {
+      test('authenticates user on successful verification', () async {
         final service = TestableSupabaseService();
-        service.sendOtpOverride = (_) async => Result.success(null);
-        final notifier = AuthNotifier(service as dynamic);
-        final err = await notifier.login('+966501234567');
-        expect(err, isNull);
-        expect(notifier.state.otpSentTo, '+966501234567');
-      });
-
-      test('returns error for invalid phone', () async {
-        final service = TestableSupabaseService();
-        final notifier = AuthNotifier(service as dynamic);
-        final err = await notifier.login('');
-        expect(err, 'Phone number is required');
-      });
-    });
-
-    group('signOut', () {
-      test('resets state on sign out', () async {
-        final service = TestableSupabaseService();
-        service.sendOtpOverride = (_) async => Result.success(null);
         service.verifyOtpOverride = ({
-          required phone,
+          required email,
           required code,
           fullName,
           username,
         }) async =>
             Result.success(_user(id: 'auth-user-1'));
         final notifier = AuthNotifier(service as dynamic);
-        await notifier.verifyOtp(phone: '+966****4567', code: '123456');
+        final err = await notifier.verifyOtp(
+          email: 'john@example.com',
+          code: '123456',
+        );
+        expect(err, isNull);
+        expect(notifier.state.isLoading, isFalse);
+        expect(notifier.state.isAuthenticated, isTrue);
+        expect(notifier.state.user, isNotNull);
+        expect(notifier.state.user!.id, 'auth-user-1');
+      });
+    });
+
+    group('login', () {
+      test('sends OTP on valid email', () async {
+        final service = TestableSupabaseService();
+        service.sendOtpOverride = (_) async => Result.success(null);
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.login('john@example.com');
+        expect(err, isNull);
+        expect(notifier.state.otpSentTo, 'john@example.com');
+      });
+
+      test('returns error for invalid email', () async {
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.login('not-an-email');
+        expect(err, 'Enter a valid email address');
+      });
+    });
+
+    group('signOut', () {
+      test('resets state on sign out', () async {
+        final service = TestableSupabaseService();
+        service.verifyOtpOverride = ({
+          required email,
+          required code,
+          fullName,
+          username,
+        }) async =>
+            Result.success(_user(id: 'auth-user-1'));
+        final notifier = AuthNotifier(service as dynamic);
+        await notifier.verifyOtp(email: 'john@example.com', code: '123456');
         expect(notifier.state.isAuthenticated, isTrue);
         await notifier.signOut();
         expect(notifier.state.isAuthenticated, isFalse);
         expect(notifier.state.user, isNull);
+      });
+    });
+
+    group('signInWithGoogle', () {
+      test('authenticates user on success', () async {
+        final service = TestableSupabaseService();
+        service.signInWithGoogleOverride = () async =>
+            Result.success(_user(id: 'google-user'));
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.signInWithGoogle();
+        expect(err, isNull);
+        expect(notifier.state.isAuthenticated, isTrue);
+        expect(notifier.state.user!.id, 'google-user');
+      });
+
+      test('handles failure', () async {
+        final service = TestableSupabaseService();
+        service.signInWithGoogleOverride = () async =>
+            Result.failure(AuthException('Google error'));
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.signInWithGoogle();
+        expect(err, 'Google error');
+        expect(notifier.state.isAuthenticated, isFalse);
+      });
+    });
+
+    group('signInWithApple', () {
+      test('authenticates user on success', () async {
+        final service = TestableSupabaseService();
+        service.signInWithAppleOverride = () async =>
+            Result.success(_user(id: 'apple-user'));
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.signInWithApple();
+        expect(err, isNull);
+        expect(notifier.state.isAuthenticated, isTrue);
+        expect(notifier.state.user!.id, 'apple-user');
+      });
+
+      test('handles failure', () async {
+        final service = TestableSupabaseService();
+        service.signInWithAppleOverride = () async =>
+            Result.failure(AuthException('Apple error'));
+        final notifier = AuthNotifier(service as dynamic);
+        final err = await notifier.signInWithApple();
+        expect(err, 'Apple error');
+        expect(notifier.state.isAuthenticated, isFalse);
       });
     });
 
@@ -213,11 +291,23 @@ void main() {
         await notifier.validateAndSendOtp(
           fullName: 'John Doe',
           username: 'john_doe',
-          phone: '+966****4567',
+          email: 'john@example.com',
         );
         expect(notifier.state.error, isNotNull);
         notifier.clearError();
         expect(notifier.state.error, isNull);
+      });
+    });
+
+    group('updateProfile', () {
+      test('updates user profile in state', () {
+        final service = TestableSupabaseService();
+        final notifier = AuthNotifier(service as dynamic);
+        notifier.updateProfile(
+          _user(id: 'u1', fullName: 'Updated Name', username: 'updated'),
+        );
+        expect(notifier.state.user, isNotNull);
+        expect(notifier.state.user!.fullName, 'Updated Name');
       });
     });
   });

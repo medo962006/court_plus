@@ -13,6 +13,14 @@ class BookingTicketScreen extends StatefulWidget {
 class _BookingTicketScreenState extends State<BookingTicketScreen> {
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final bookingId = args?['bookingId'] as String? ?? '#BK-PENDING';
+    final courtName = args?['courtName'] as String? ?? 'Court';
+    final date = args?['date'] as String? ?? '';
+    final time = args?['time'] as String? ?? '';
+    final duration = (args?['duration'] as num?)?.toDouble() ?? 1.0;
+    final totalAmount = (args?['totalAmount'] as num?)?.toDouble() ?? 0;
+
     return Scaffold(
       backgroundColor: AppColors.lightBg,
       appBar: AppBar(
@@ -47,10 +55,15 @@ class _BookingTicketScreenState extends State<BookingTicketScreen> {
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         child: Column(
           children: [
-            // ── Ticket card ──
-            _TicketCard(),
+            _TicketCard(
+              bookingId: bookingId,
+              courtName: courtName,
+              date: date,
+              time: time,
+              duration: duration,
+              totalAmount: totalAmount,
+            ),
             const SizedBox(height: 20),
-            // ── Add to Calendar button ──
             SizedBox(
               width: double.infinity,
               height: 54,
@@ -89,8 +102,24 @@ class _BookingTicketScreenState extends State<BookingTicketScreen> {
 }
 
 class _TicketCard extends StatelessWidget {
+  final String bookingId, courtName, date, time;
+  final double duration, totalAmount;
+
+  const _TicketCard({
+    required this.bookingId,
+    required this.courtName,
+    required this.date,
+    required this.time,
+    required this.duration,
+    required this.totalAmount,
+  });
+
   @override
   Widget build(BuildContext context) {
+    final displayId = bookingId.length > 12
+        ? '#${bookingId.substring(0, 8).toUpperCase()}'
+        : '#$bookingId';
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -168,7 +197,7 @@ class _TicketCard extends StatelessWidget {
 
                 // Booking ID
                 Center(
-                  child: Text('#BK-2026-0842',
+                  child: Text(displayId,
                       style: const TextStyle(
                           color: AppColors.lightMuted,
                           fontSize: 13,
@@ -180,31 +209,25 @@ class _TicketCard extends StatelessWidget {
                 _InfoRow(
                   icon: Ph.tennis_ball,
                   label: 'Court',
-                  value: 'Court A — Eagle Sport',
+                  value: courtName,
                 ),
                 const Divider(height: 20, color: AppColors.lightBorder),
                 _InfoRow(
                   icon: Ph.calendar_blank,
                   label: 'Date',
-                  value: 'Monday, July 28, 2026',
+                  value: date.isNotEmpty ? date : 'TBD',
                 ),
                 const Divider(height: 20, color: AppColors.lightBorder),
                 _InfoRow(
                   icon: Ph.clock,
                   label: 'Time',
-                  value: '10:00 AM — 11:30 AM',
+                  value: time.isNotEmpty ? time : 'TBD',
                 ),
                 const Divider(height: 20, color: AppColors.lightBorder),
                 _InfoRow(
-                  icon: Ph.map_pin,
-                  label: 'Location',
-                  value: 'Prince Turki St, Riyadh 12345',
-                ),
-                const Divider(height: 20, color: AppColors.lightBorder),
-                _InfoRow(
-                  icon: Ph.user_circle,
-                  label: 'Player',
-                  value: 'Ahmed Al-Saud',
+                  icon: Ph.hourglass,
+                  label: 'Duration',
+                  value: '${duration.toStringAsFixed(0)} hour${duration == 1 ? '' : 's'}',
                 ),
                 const Divider(height: 20, color: AppColors.lightBorder),
 
@@ -217,8 +240,8 @@ class _TicketCard extends StatelessWidget {
                         style: TextStyle(
                             color: AppColors.lightMuted, fontSize: 13)),
                     const Spacer(),
-                    const Text('SR 185',
-                        style: TextStyle(
+                    Text('SR ${totalAmount.toInt()}',
+                        style: const TextStyle(
                             color: AppColors.lightText,
                             fontSize: 16,
                             fontWeight: FontWeight.bold)),
@@ -273,16 +296,16 @@ class _TicketCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _StubLabel('Booking ID', '#BK-2026-0842'),
-                    _StubLabel('Court', 'A'),
+                    _StubLabel('Booking ID', displayId),
+                    _StubLabel('Court', courtName),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _StubLabel('Date', 'Jul 28'),
-                    _StubLabel('Time', '10:00 AM'),
+                    _StubLabel('Date', date.isNotEmpty ? date.split(', ').last : 'TBD'),
+                    _StubLabel('Time', time.isNotEmpty ? time.split(' — ').first : 'TBD'),
                   ],
                 ),
               ],

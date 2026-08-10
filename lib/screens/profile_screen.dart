@@ -1,16 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
+import '../presentation/providers/auth_provider.dart';
+import '../presentation/providers/moments_provider.dart';
+import '../core/widgets/animations.dart';
+import '../services/models.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   final bool isOwnProfile;
 
   const ProfileScreen({super.key, this.isOwnProfile = true});
 
   @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authStateProvider);
+    final momentsAsync = ref.watch(momentsProvider);
+    final user = authState.user;
+    final moments = momentsAsync.value ?? <Moment>[];
+
+    // Dynamic user data
+    final displayName = user?.fullName.isNotEmpty == true ? user!.fullName : 'Player';
+    final displayHandle = user?.username.isNotEmpty == true ? '@${user!.username}' : '@player';
+    final displayBio = (user?.bio?.isNotEmpty == true ? user!.bio! : 'Sports enthusiast');
+    final followingCount = user?.followingCount ?? 0;
+    final followersCount = user?.followersCount ?? 0;
+    final matchesCount = user?.matchesCount ?? 0;
+    final courtsCount = user?.courtsCount ?? 0;
+
     return Scaffold(
       backgroundColor: AppColors.lightBg,
       appBar: AppBar(
@@ -18,28 +42,28 @@ class ProfileScreen extends StatelessWidget {
         elevation: 0,
         scrolledUnderElevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: CircleAvatar(
-            radius: 18,
-            backgroundColor: AppColors.lightField,
-            backgroundImage: const AssetImage('assets/images/avatar.png'),
-            child: const Icon(Icons.person, color: AppColors.lightMuted, size: 20),
-          ),
-        ),
-        title: const Text(
-          'My Profile',
-          style: TextStyle(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.lightField,
+                    child: const Icon(Icons.person, color: AppColors.lightMuted, size: 20),
+                  ),
+                ),
+                title: Text(
+          widget.isOwnProfile ? 'My Profile' : displayName,
+          style: const TextStyle(
             color: AppColors.lightText,
             fontSize: 17,
             fontWeight: FontWeight.w700,
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Iconify(Ph.dots_three_outline, size: 22),
-            color: AppColors.lightText,
-            onPressed: () {},
-          ),
+          if (widget.isOwnProfile)
+            IconButton(
+              icon: const Iconify(Ph.dots_three_outline, size: 22),
+              color: AppColors.lightText,
+              onPressed: () => Navigator.of(context).pushNamed(Routes.settings),
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -55,43 +79,52 @@ class ProfileScreen extends StatelessWidget {
                   Container(
                     height: 140,
                     width: double.infinity,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       color: AppColors.lightField,
+                      image: user?.headerUrl != null
+                          ? DecorationImage(
+                              image: NetworkImage(user!.headerUrl!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
-                    child: const Center(
-                      child: Icon(Icons.image_outlined, color: AppColors.lightMuted, size: 40),
-                    ),
+                    child: user?.headerUrl == null
+                        ? const Center(
+                            child: Icon(Icons.image_outlined, color: AppColors.lightMuted, size: 40),
+                          )
+                        : null,
                   ),
                   // "Update" button on cover
-                  Positioned(
-                    bottom: 48,
-                    right: 16,
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(context).pushNamed(Routes.updateProfile),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Iconify(Ph.pencil_simple, size: 12, color: AppColors.lightText),
-                            SizedBox(width: 4),
-                            Text(
-                              'Update',
-                              style: TextStyle(
-                                color: AppColors.lightText,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                  if (widget.isOwnProfile)
+                    Positioned(
+                      bottom: 48,
+                      right: 16,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pushNamed(Routes.updateProfile),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Iconify(Ph.pencil_simple, size: 12, color: AppColors.lightText),
+                              SizedBox(width: 4),
+                              Text(
+                                'Update',
+                                style: TextStyle(
+                                  color: AppColors.lightText,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   // Profile pic overlapping cover
                   Positioned(
                     bottom: -4,
@@ -105,8 +138,12 @@ class ProfileScreen extends StatelessWidget {
                           child: CircleAvatar(
                             radius: 39,
                             backgroundColor: AppColors.lightField,
-                            backgroundImage: const AssetImage('assets/images/avatar.png'),
-                            child: const Icon(Icons.person, color: AppColors.lightMuted, size: 36),
+                            backgroundImage: user?.avatarUrl != null
+                                ? NetworkImage(user!.avatarUrl!)
+                                : null,
+                            child: user?.avatarUrl == null
+                                ? const Icon(Icons.person, color: AppColors.lightMuted, size: 36)
+                                : null,
                           ),
                         ),
                         // Green online dot
@@ -137,17 +174,17 @@ class ProfileScreen extends StatelessWidget {
                 children: [
                   const Spacer(),
                   Column(
-                    children: const [
+                    children: [
                       Text(
-                        '975',
-                        style: TextStyle(
+                        _formatCount(followingCount),
+                        style: const TextStyle(
                           color: AppColors.lightText,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 2),
+                      const Text(
                         'Following',
                         style: TextStyle(
                           color: AppColors.lightMuted,
@@ -158,17 +195,17 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 48),
                   Column(
-                    children: const [
+                    children: [
                       Text(
-                        '1.6K',
-                        style: TextStyle(
+                        _formatCount(followersCount),
+                        style: const TextStyle(
                           color: AppColors.lightText,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(height: 2),
-                      Text(
+                      const SizedBox(height: 2),
+                      const Text(
                         'Follower',
                         style: TextStyle(
                           color: AppColors.lightMuted,
@@ -184,22 +221,22 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // ── Name & Handle ──
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   Text(
-                    'Justin Nurmagomedov',
-                    style: TextStyle(
+                    displayName,
+                    style: const TextStyle(
                       color: AppColors.lightText,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    '@justinnurmagomedov',
-                    style: TextStyle(
+                    displayHandle,
+                    style: const TextStyle(
                       color: AppColors.lightMuted,
                       fontSize: 14,
                     ),
@@ -210,13 +247,12 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 8),
 
             // ── Bio ──
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'Professional athlete & sports enthusiast. '
-                'Love competing and exploring new courts around the world.',
+                displayBio,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.lightText,
                   fontSize: 13,
                   height: 1.4,
@@ -224,22 +260,6 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // ── Interest Pills ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: const [
-                  _InterestPill(emoji: '🎾', label: 'Tennis', level: 'Amateur'),
-                  _InterestPill(emoji: '⚽', label: 'Football', level: 'Advanced'),
-                  _InterestPill(emoji: '🚲', label: 'Pedal', level: 'Amateur'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
 
             // ── Play Stats Row ──
             Container(
@@ -253,9 +273,9 @@ class ProfileScreen extends StatelessWidget {
               child: Row(
                 children: [
                   _PlayStatItem(
-                    icon: Ph.tennis_ball_fill,
-                    value: '5',
-                    label: 'courts played',
+                                      icon: Ph.tennis_ball_fill,
+                                      valueWidget: AnimatedCount(target: courtsCount, style: const TextStyle(color: AppColors.lightText, fontSize: 18, fontWeight: FontWeight.w700)),
+                                      label: 'courts played',
                   ),
                   Container(
                     width: 1,
@@ -264,8 +284,8 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   _PlayStatItem(
                     icon: Ph.clock_fill,
-                    value: '8 hrs',
-                    label: 'court times',
+                    valueWidget: AnimatedCount(target: matchesCount, style: const TextStyle(color: AppColors.lightText, fontSize: 18, fontWeight: FontWeight.w700)),
+                                        label: 'court times',
                   ),
                   Container(
                     width: 1,
@@ -274,8 +294,8 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   _PlayStatItem(
                     icon: Ph.users_fill,
-                    value: '8',
-                    label: 'sessions',
+                    valueWidget: AnimatedCount(target: matchesCount, style: const TextStyle(color: AppColors.lightText, fontSize: 18, fontWeight: FontWeight.w700)),
+                                        label: 'sessions',
                     hasBorder: false,
                   ),
                 ],
@@ -314,90 +334,31 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // ── Moment Post Card ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.lightBorder),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Moment image
-                    Container(
-                      height: 180,
-                      width: double.infinity,
-                      color: AppColors.lightField,
-                      child: const Center(
-                        child: Icon(Icons.image_outlined, color: AppColors.lightMuted, size: 44),
+            // ── Moments Grid ──
+            if (moments.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Iconify(Ph.image, size: 40, color: AppColors.lightMuted),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'No moments yet',
+                        style: TextStyle(color: AppColors.lightMuted, fontSize: 15),
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Morning bright for Tennis Day',
-                            style: TextStyle(
-                              color: AppColors.lightText,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Iconify(Ph.clock, size: 14, color: AppColors.lightMuted),
-                              const SizedBox(width: 4),
-                              const Text(
-                                '3 days ago',
-                                style: TextStyle(
-                                  color: AppColors.lightMuted,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const Spacer(),
-                              Iconify(
-                                Ph.heart,
-                                size: 18,
-                                color: AppColors.lightMuted,
-                              ),
-                              const SizedBox(width: 4),
-                              const Text(
-                                '24',
-                                style: TextStyle(
-                                  color: AppColors.lightMuted,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Iconify(
-                                Ph.chat_circle_dots,
-                                size: 18,
-                                color: AppColors.lightMuted,
-                              ),
-                              const SizedBox(width: 4),
-                              const Text(
-                                '8',
-                                style: TextStyle(
-                                  color: AppColors.lightMuted,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Share your first moment!',
+                        style: TextStyle(color: AppColors.lightMuted, fontSize: 13),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              )
+            else
+              ...moments.take(3).map((moment) => _MomentCard(moment: moment)),
+
             const SizedBox(height: 24),
           ],
         ),
@@ -406,72 +367,140 @@ class ProfileScreen extends StatelessWidget {
       bottomNavigationBar: _ProfileBottomNav(index: 4),
     );
   }
-}
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-class _InterestPill extends StatelessWidget {
-  final String emoji;
-  final String label;
-  final String level;
-
-  const _InterestPill({
-    required this.emoji,
-    required this.label,
-    required this.level,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.neonGreenAlt.withValues(alpha: 0.6)),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 14)),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.lightText,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              '•',
-              style: TextStyle(
-                color: AppColors.lightMuted,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          Text(
-            level,
-            style: const TextStyle(
-              color: AppColors.lightMuted,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
+  String _formatCount(int count) {
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
   }
 }
 
+// ─── Moment Card ───
+
+class _MomentCard extends StatelessWidget {
+  final Moment moment;
+
+  const _MomentCard({required this.moment});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.lightBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Moment image
+            Container(
+              height: 180,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppColors.lightField,
+                image: moment.imageUrl.isNotEmpty
+                    ? DecorationImage(
+                        image: AssetImage(moment.imageUrl),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: moment.imageUrl.isEmpty
+                  ? const Center(
+                      child: Icon(Icons.image_outlined, color: AppColors.lightMuted, size: 44),
+                    )
+                  : null,
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    moment.caption ?? 'No caption',
+                    style: const TextStyle(
+                      color: AppColors.lightText,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Iconify(Ph.clock, size: 14, color: AppColors.lightMuted),
+                      const SizedBox(width: 4),
+                      Text(
+                        moment.createdAt.isNotEmpty
+                            ? _relativeTime(DateTime.parse(moment.createdAt))
+                            : '',
+                        style: const TextStyle(
+                          color: AppColors.lightMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Iconify(
+                        Ph.heart,
+                        size: 18,
+                        color: AppColors.lightMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${moment.likesCount}',
+                        style: const TextStyle(
+                          color: AppColors.lightMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Iconify(
+                        Ph.chat_circle_dots,
+                        size: 18,
+                        color: AppColors.lightMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      const Text(
+                        '0',
+                        style: TextStyle(
+                          color: AppColors.lightMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _relativeTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'now';
+  }
+}
+
+// ─── Supporting widgets ───
+
 class _PlayStatItem extends StatelessWidget {
-  final String icon, value, label;
+  final String icon, label;
+  final Widget? valueWidget;
   final bool hasBorder;
 
   const _PlayStatItem({
     required this.icon,
-    required this.value,
+    this.valueWidget,
     required this.label,
     this.hasBorder = true,
   });
@@ -482,19 +511,19 @@ class _PlayStatItem extends StatelessWidget {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Iconify(icon, size: 16, color: AppColors.lightText),
-              const SizedBox(width: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: AppColors.lightText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Iconify(icon, size: 16, color: AppColors.lightText),
+                        const SizedBox(width: 4),
+                                                valueWidget ?? const Text(
+                                                  '',
+                                                  style: TextStyle(
+                                                    color: AppColors.lightText,
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                    ],
           ),
           const SizedBox(height: 2),
           Text(

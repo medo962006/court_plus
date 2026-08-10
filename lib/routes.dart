@@ -22,7 +22,7 @@ import '../screens/add_players_screen.dart';
 import '../screens/open_matches_screen.dart';
 import '../screens/match_filter_screen.dart';
 import '../screens/receive_invitation_screen.dart';
-import '../screens/activity_screen.dart';
+import '../presentation/screens/activity/activity_screen.dart';
 import '../screens/add_review_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/search_results_screen.dart';
@@ -34,6 +34,14 @@ import '../screens/activity_log_screen.dart';
 import '../screens/booking_ticket_screen.dart';
 import '../presentation/screens/match/create_match_screen.dart';
 import '../presentation/screens/match/invite_players_screen.dart';
+import '../screens/coaches_screen.dart';
+import '../screens/coach_detail_screen.dart';
+import '../screens/moments_screen.dart';
+import '../screens/create_moment_screen.dart';
+import '../screens/notification_settings_screen.dart';
+import '../screens/thank_you_screen.dart';
+import '../presentation/screens/match/invitation_details_screen.dart';
+import 'services/models.dart';
 
 class Routes {
   static const splash = '/';
@@ -73,6 +81,13 @@ class Routes {
   static const bookingTicket = '/booking-ticket';
   static const createMatch = '/create-match';
 
+  static const coaches = '/coaches';
+  static const coachDetails = '/coach-details';
+  static const moments = '/moments';
+  static const createMoment = '/create-moment';
+  static const thankYou = '/thank-you';
+  static const notificationSettings = '/notification-settings';
+
   static Map<String, WidgetBuilder> get map => {
     splash: (_) => const SplashScreen(),
     language: (_) => const LanguageScreen(),
@@ -109,6 +124,21 @@ class Routes {
     bookingTicket: (_) => const BookingTicketScreen(),
     createMatch: (_) => const CreateMatchScreen(),
     invitePlayers: (_) => const InvitePlayersScreen(),
+    coaches: (_) => const CoachesScreen(),
+    coachDetails: (_) => const CoachDetailScreen(),
+    moments: (_) => const MomentsScreen(),
+    createMoment: (_) => const CreateMomentScreen(),
+    thankYou: (_) => const ThankYouScreen(),
+    notificationSettings: (_) => const NotificationSettingsScreen(),
+    invitationDetails: (context) {
+      final args = ModalRoute.of(context)!.settings.arguments;
+      if (args is Invitation) {
+        return InvitationDetailsScreen(invitation: args);
+      }
+      return const Scaffold(
+        body: Center(child: Text('No invitation data')),
+      );
+    },
   };
 
   /// Smooth cross-fade transition used from splash.
@@ -117,5 +147,25 @@ class Routes {
     pageBuilder: (context, a1, a2) => page,
     transitionsBuilder: (context, animation, a2, child) =>
         FadeTransition(opacity: animation, child: child),
+  );
+
+  /// iOS-style slide transition with curved easing.
+  static Route<T> slideUp<T>(Widget page) => PageRouteBuilder<T>(
+    transitionDuration: const Duration(milliseconds: 350),
+    reverseTransitionDuration: const Duration(milliseconds: 250),
+    pageBuilder: (context, animation, secondaryAnimation) => page,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      const begin = Offset(0.0, 0.08);
+      const end = Offset.zero;
+      const curve = Curves.easeOutCubic;
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: FadeTransition(
+          opacity: animation,
+          child: child,
+        ),
+      );
+    },
   );
 }

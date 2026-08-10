@@ -4,8 +4,8 @@ import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../../../theme/app_theme.dart';
 import '../../../routes.dart';
-import '../../../services/mock_data_service.dart';
 import '../../providers/match_provider.dart';
+import '../../providers/courts_provider.dart';
 
 /// Step 1 of match creation: pick court, date/time, level, gender, privacy & format.
 class CreateMatchScreen extends ConsumerStatefulWidget {
@@ -178,7 +178,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        final courts = MockDataService.courts;
+        final courtsAsync = ref.watch(courtsProvider);
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             final currentCourtId = ref.read(matchCreationProvider).courtId;
@@ -227,9 +227,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   Flexible(
                     child: ListView.builder(
                       shrinkWrap: true,
-                      itemCount: courts.length,
+                      itemCount: (courtsAsync.value ?? []).length,
                       itemBuilder: (_, i) {
-                        final court = courts[i];
+                        final court = (courtsAsync.value ?? [])[i];
                         final selected = court.id == currentCourtId;
                         return GestureDetector(
                           onTap: () {
@@ -392,7 +392,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     MatchCreationNotifier notifier,
   ) {
     final date = state.selectedDate ?? DateTime.now();
-    final slots = MockDataService.getTimeSlots(date);
+    final isWeekend = date.weekday == DateTime.friday || date.weekday == DateTime.saturday;
+    final slots = isWeekend
+        ? ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
+        : ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00'];
 
     return Container(
       width: double.infinity,

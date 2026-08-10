@@ -4,6 +4,7 @@ import 'package:iconify_flutter/icons/ph.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
 import '../widgets/country_flag.dart';
+import '../l10n/app_strings.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -28,8 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: AppColors.lightText,
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Settings and activity',
+        title: Text(AppStrings.of(context).t('settingsAndActivity'),
           style: TextStyle(
             color: AppColors.lightText,
             fontSize: 17,
@@ -53,8 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Iconify(Ph.bookmark_simple,
                     size: 20, color: AppColors.lightText),
               ),
-              title: const Text(
-                'Saved',
+              title: Text(AppStrings.of(context).t('saved'),
                 style: TextStyle(
                   color: AppColors.lightText,
                   fontSize: 15,
@@ -69,10 +68,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 12),
 
           // ── Settings Section Header ──
-          const Padding(
-            padding: EdgeInsets.only(left: 4, top: 8, bottom: 12),
-            child: Text(
-              'Settings',
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 8, bottom: 12),
+            child: Text(AppStrings.of(context).t('settings'),
               style: TextStyle(
                 color: AppColors.lightMuted,
                 fontSize: 13,
@@ -95,8 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Iconify(Ph.bell,
                     size: 20, color: AppColors.lightText),
               ),
-              title: const Text(
-                'Notifications',
+              title: Text(AppStrings.of(context).t('notifications'),
                 style: TextStyle(
                   color: AppColors.lightText,
                   fontSize: 15,
@@ -129,8 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Iconify(Ph.globe,
                     size: 20, color: AppColors.lightText),
               ),
-              title: const Text(
-                'Language',
+              title: Text(AppStrings.of(context).t('language'),
                 style: TextStyle(
                   color: AppColors.lightText,
                   fontSize: 15,
@@ -172,8 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Iconify(Ph.question,
                     size: 20, color: AppColors.lightText),
               ),
-              title: const Text(
-                'How Court+ work',
+              title: Text(AppStrings.of(context).t('howCourtPlusWorks'),
                 style: TextStyle(
                   color: AppColors.lightText,
                   fontSize: 15,
@@ -188,10 +183,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
 
           // ── Legal Information Section Header ──
-          const Padding(
-            padding: EdgeInsets.only(left: 4, top: 8, bottom: 12),
-            child: Text(
-              'Legal information',
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 8, bottom: 12),
+            child: Text(AppStrings.of(context).t('legalInformation'),
               style: TextStyle(
                 color: AppColors.lightMuted,
                 fontSize: 13,
@@ -214,8 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Iconify(Ph.file_text,
                     size: 20, color: AppColors.lightText),
               ),
-              title: const Text(
-                'Terms of use',
+              title: Text(AppStrings.of(context).t('termsOfUse'),
                 style: TextStyle(
                   color: AppColors.lightText,
                   fontSize: 15,
@@ -242,8 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Iconify(Ph.eye,
                     size: 20, color: AppColors.lightText),
               ),
-              title: const Text(
-                'Privacy policy',
+              title: Text(AppStrings.of(context).t('privacyPolicy'),
                 style: TextStyle(
                   color: AppColors.lightText,
                   fontSize: 15,
@@ -270,8 +262,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Iconify(Ph.door,
                     size: 20, color: AppColors.error),
               ),
-              title: const Text(
-                'log out',
+              title: Text(AppStrings.of(context).t('logOut'),
                 style: TextStyle(
                   color: AppColors.error,
                   fontSize: 15,
@@ -288,7 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── App version ──
           Center(
             child: Text(
-              'Version 1.0.0',
+              AppStrings.of(context).t('version'),
               style: TextStyle(
                 color: AppColors.lightMuted.withValues(alpha: 0.6),
                 fontSize: 12,
@@ -308,19 +299,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Logout',
+        title: Text(AppStrings.of(context).t('logout'),
           style: TextStyle(color: AppColors.lightText),
         ),
-        content: const Text(
-          'Are you sure you want to logout?',
+        content: Text(AppStrings.of(context).t('areYouSureLogout'),
           style: TextStyle(color: AppColors.lightMuted),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
-              'Cancel',
+            child: Text(AppStrings.of(context).t('cancel'),
               style: TextStyle(color: AppColors.lightMuted),
             ),
           ),
@@ -330,8 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.of(context)
                   .pushNamedAndRemoveUntil(Routes.login, (_) => false);
             },
-            child: const Text(
-              'Logout',
+            child: Text(AppStrings.of(context).t('logout'),
               style: TextStyle(
                 color: AppColors.error,
                 fontWeight: FontWeight.w600,

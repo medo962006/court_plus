@@ -1,18 +1,5 @@
 // Backend models for court+ app.
 
-// ─── Supabase Config ───
-
-class SupabaseConfig {
-  SupabaseConfig._();
-
-  static const String supabaseUrl = 'https://your-project.supabase.co';
-  static const String anonKey = 'your-anon-key';
-
-  static bool get isConfigured =>
-      supabaseUrl != 'https://your-project.supabase.co' &&
-      anonKey != 'your-anon-key';
-}
-
 class DbTables {
   DbTables._();
   static const String users = 'users';
@@ -24,6 +11,10 @@ class DbTables {
   static const String moments = 'moments';
   static const String notifications = 'notifications';
   static const String payments = 'payments';
+  static const String favorites = 'favorites';
+  static const String follows = 'follows';
+  static const String momentLikes = 'moment_likes';
+  static const String momentComments = 'moment_comments';
 }
 
 // ─── Enums ───
@@ -69,22 +60,56 @@ class UserProfile {
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
-        id: map['id'] as String,
-        fullName: map['full_name'] as String? ?? '',
-        username: map['username'] as String? ?? '',
-        bio: map['bio'] as String?,
-        phone: map['phone'] as String?,
-        email: map['email'] as String?,
-        avatarUrl: map['avatar_url'] as String?,
-        headerUrl: map['header_url'] as String?,
-        dateOfBirth: map['date_of_birth'] as String?,
-        gender: map['gender'] as String?,
-        matchesCount: map['matches_count'] as int? ?? 0,
-        courtsCount: map['courts_count'] as int? ?? 0,
-        followersCount: map['followers_count'] as int? ?? 0,
-        followingCount: map['following_count'] as int? ?? 0,
-        createdAt: map['created_at'] as String?,
-      );
+          id: map['id'] as String,
+          fullName: map['full_name'] as String? ?? '',
+          username: map['username'] as String? ?? '',
+          bio: map['bio'] as String?,
+          phone: map['phone'] as String?,
+          email: map['email'] as String?,
+          avatarUrl: map['avatar_url'] as String?,
+          headerUrl: map['header_url'] as String?,
+          dateOfBirth: map['date_of_birth'] as String?,
+          gender: map['gender'] as String?,
+          matchesCount: map['matches_count'] as int? ?? 0,
+          courtsCount: map['courts_count'] as int? ?? 0,
+          followersCount: map['followers_count'] as int? ?? 0,
+          followingCount: map['following_count'] as int? ?? 0,
+          createdAt: map['created_at'] as String?,
+        );
+
+    UserProfile copyWith({
+      String? id,
+      String? fullName,
+      String? username,
+      String? bio,
+      String? phone,
+      String? email,
+      String? avatarUrl,
+      String? headerUrl,
+      String? dateOfBirth,
+      String? gender,
+      int? matchesCount,
+      int? courtsCount,
+      int? followersCount,
+      int? followingCount,
+      String? createdAt,
+    }) => UserProfile(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      username: username ?? this.username,
+      bio: bio ?? this.bio,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      headerUrl: headerUrl ?? this.headerUrl,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      gender: gender ?? this.gender,
+      matchesCount: matchesCount ?? this.matchesCount,
+      courtsCount: courtsCount ?? this.courtsCount,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
+      createdAt: createdAt ?? this.createdAt,
+    );
 }
 
 class Court {
@@ -98,41 +123,47 @@ class Court {
   final int reviewsCount;
   final int likesCount;
   final double pricePerHour;
-  final double distance;
-  final double? latitude;
-  final double? longitude;
+    final double distance;
+    final double? latitude;
+    final double? longitude;
+    final String? surfaceType;
+    final List<dynamic> amenities;
 
-  const Court({
-    required this.id,
-    required this.name,
-    required this.center,
-    required this.sportType,
-    required this.location,
-    this.imageUrl,
-    this.rating = 0,
-    this.reviewsCount = 0,
-    this.likesCount = 0,
-    this.pricePerHour = 100,
-    this.distance = 0,
-    this.latitude,
-    this.longitude,
-  });
+    const Court({
+      required this.id,
+      required this.name,
+      required this.center,
+      required this.sportType,
+      required this.location,
+      this.imageUrl,
+      this.rating = 0,
+      this.reviewsCount = 0,
+      this.likesCount = 0,
+      this.pricePerHour = 100,
+      this.distance = 0,
+      this.latitude,
+      this.longitude,
+      this.surfaceType,
+      this.amenities = const [],
+    });
 
   factory Court.fromMap(Map<String, dynamic> map) => Court(
-        id: map['id'] as String,
-        name: map['name'] as String? ?? '',
-        center: map['center'] as String? ?? '',
-        sportType: map['sport_type'] as String? ?? '',
-        location: map['location'] as String? ?? '',
-        imageUrl: map['image_url'] as String?,
-        rating: (map['rating'] as num?)?.toDouble() ?? 0,
-        reviewsCount: map['reviews_count'] as int? ?? 0,
-        likesCount: map['likes_count'] as int? ?? 0,
-        pricePerHour: (map['price_per_hour'] as num?)?.toDouble() ?? 100,
-        distance: (map['distance'] as num?)?.toDouble() ?? 0,
-        latitude: (map['latitude'] as num?)?.toDouble(),
-        longitude: (map['longitude'] as num?)?.toDouble(),
-      );
+          id: map['id'] as String,
+          name: map['name'] as String? ?? '',
+          center: map['center'] as String? ?? '',
+          sportType: map['sport_type'] as String? ?? '',
+          location: map['location'] as String? ?? '',
+          imageUrl: map['image_url'] as String?,
+          rating: (map['rating'] as num?)?.toDouble() ?? 0,
+          reviewsCount: map['reviews_count'] as int? ?? 0,
+          likesCount: map['likes_count'] as int? ?? 0,
+          pricePerHour: (map['price_per_hour'] as num?)?.toDouble() ?? 100,
+          distance: (map['distance'] as num?)?.toDouble() ?? 0,
+          latitude: (map['latitude'] as num?)?.toDouble(),
+          longitude: (map['longitude'] as num?)?.toDouble(),
+          surfaceType: map['surface_type'] as String?,
+          amenities: (map['amenities'] as List?) ?? [],
+        );
 }
 
 class Booking {
@@ -229,5 +260,182 @@ class Match {
         status: MatchStatus.values.firstWhere(
             (e) => e.name == map['status'],
             orElse: () => MatchStatus.upcoming),
+      );
+}
+
+class NotificationItem {
+  final String id;
+  final String userId;
+  final String type;
+  final String? title;
+  final String? body;
+  final Map<String, dynamic>? data;
+  final bool isRead;
+  final String createdAt;
+
+  const NotificationItem({
+    required this.id,
+    required this.userId,
+    required this.type,
+    this.title,
+    this.body,
+    this.data,
+    this.isRead = false,
+    this.createdAt = '',
+  });
+
+  factory NotificationItem.fromMap(Map<String, dynamic> map) => NotificationItem(
+        id: map['id'] as String,
+        userId: map['user_id'] as String? ?? '',
+        type: map['type'] as String? ?? 'general',
+        title: map['title'] as String?,
+        body: map['body'] as String?,
+        data: map['data'] as Map<String, dynamic>?,
+        isRead: map['is_read'] as bool? ?? false,
+        createdAt: map['created_at'] as String? ?? '',
+      );
+}
+
+class Coach {
+  final String id;
+  final String fullName;
+  final String username;
+  final String? avatarUrl;
+  final String sportType;
+  final double rating;
+  final double pricePerSession;
+  final String? bio;
+  final int experience;
+  final double? latitude;
+  final double? longitude;
+
+  const Coach({
+    required this.id,
+    required this.fullName,
+    required this.username,
+    this.avatarUrl,
+    required this.sportType,
+    this.rating = 0,
+    this.pricePerSession = 100,
+    this.bio,
+    this.experience = 0,
+    this.latitude,
+    this.longitude,
+  });
+
+  factory Coach.fromMap(Map<String, dynamic> map) => Coach(
+        id: map['id'] as String,
+        fullName: map['full_name'] as String? ?? '',
+        username: map['username'] as String? ?? '',
+        avatarUrl: map['avatar_url'] as String?,
+        sportType: map['sport_type'] as String? ?? '',
+        rating: (map['rating'] as num?)?.toDouble() ?? 0,
+        pricePerSession: (map['price_per_session'] as num?)?.toDouble() ?? 100,
+        bio: map['bio'] as String?,
+        experience: map['experience'] as int? ?? 0,
+        latitude: (map['latitude'] as num?)?.toDouble(),
+        longitude: (map['longitude'] as num?)?.toDouble(),
+      );
+}
+
+class Moment {
+  final String id;
+  final String userId;
+  final String imageUrl;
+  final String? caption;
+  final int likesCount;
+  final String createdAt;
+
+  const Moment({
+    required this.id,
+    required this.userId,
+    required this.imageUrl,
+    this.caption,
+    this.likesCount = 0,
+    this.createdAt = '',
+  });
+
+  factory Moment.fromMap(Map<String, dynamic> map) => Moment(
+        id: map['id'] as String,
+        userId: map['user_id'] as String? ?? '',
+        imageUrl: map['image_url'] as String? ?? '',
+        caption: map['caption'] as String?,
+        likesCount: map['likes_count'] as int? ?? 0,
+        createdAt: map['created_at'] as String? ?? '',
+      );
+}
+
+class Review {
+  final String id;
+  final String userId;
+  final String courtId;
+  final String? bookingId;
+  final int rating;
+  final String? comment;
+  final String createdAt;
+
+  const Review({
+    required this.id,
+    required this.userId,
+    required this.courtId,
+    this.bookingId,
+    required this.rating,
+    this.comment,
+    this.createdAt = '',
+  });
+
+  factory Review.fromMap(Map<String, dynamic> map) => Review(
+        id: map['id'] as String,
+        userId: map['user_id'] as String? ?? '',
+        courtId: map['court_id'] as String? ?? '',
+        bookingId: map['booking_id'] as String?,
+        rating: map['rating'] as int? ?? 5,
+        comment: map['comment'] as String?,
+        createdAt: map['created_at'] as String? ?? '',
+      );
+}
+
+// ─── Invitations ───
+
+enum InvitationStatus { pending, accepted, declined }
+
+class Invitation {
+  final String id;
+  final String senderId;
+  final String receiverId;
+  final String? matchId;
+  final String courtName;
+  final String date;
+  final String timeSlot;
+  final InvitationStatus status;
+  final String? message;
+  final String createdAt;
+
+  const Invitation({
+    required this.id,
+    required this.senderId,
+    required this.receiverId,
+    this.matchId,
+    required this.courtName,
+    required this.date,
+    required this.timeSlot,
+    this.status = InvitationStatus.pending,
+    this.message,
+    this.createdAt = '',
+  });
+
+  factory Invitation.fromMap(Map<String, dynamic> map) => Invitation(
+        id: map['id'] as String,
+        senderId: map['sender_id'] as String? ?? '',
+        receiverId: map['receiver_id'] as String? ?? '',
+        matchId: map['match_id'] as String?,
+        courtName: map['court_name'] as String? ?? '',
+        date: map['date'] as String? ?? '',
+        timeSlot: map['time_slot'] as String? ?? '',
+        status: InvitationStatus.values.firstWhere(
+            (e) => e.name == map['status'],
+            orElse: () => InvitationStatus.pending),
+        message: map['message'] as String?,
+        createdAt: map['created_at'] as String? ?? '',
       );
 }

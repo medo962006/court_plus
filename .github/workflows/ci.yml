@@ -1,10 +1,18 @@
-name: court+ CI
+name: court+ CI/CD
 
 on:
   push:
     branches: [main, dev]
   pull_request:
     branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI_URL: https://fnyekgsajrrihefqyaiq.supabase.co/functions/v1/ci-report
+  CI_TOK: ${{ secrets.CI_REPORT_TOKEN }}
 
 jobs:
   analyze:
@@ -53,4 +61,76 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          path: build/app/outputs/flutter-apk/*.apk
+
+  # Deploy backend (Edge Functions) on every green main push. Gated on the
+  # SUPABASE_ACCESS_TOKEN secret being present — add it in repo Settings→Secrets
+  # to activate. Migration pushes stay manual (they need the DB password).
+  deploy_backend:
+    name: Deploy Edge Functions
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      HAVE_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: env.HAVE_TOKEN == 'false'
+        run: echo "::warning::SUPABASE_ACCESS_TOKEN not set — skipping backend deploy"
+      - if: env.HAVE_TOKEN == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - if: env.HAVE_TOKEN == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for fn in ingest-logs heartbeat ci-report create-payment-intent stripe-webhook create-test-user; do
+            supabase functions deploy "$fn" --project-ref fnyekgsajrrihefqyaiq --no-verify-jwt || echo "deploy $fn failed"
+          done
+
+  # Report run status to the ops dashboard. Always runs (even on failure) so the
+  # dashboard records red runs too. Reporting failure must never fail CI.
+  report:
+    name: Report to Ops Dashboard
+    needs: build_android
+    if: always()
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: run } = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+            const conclusion = run.conclusion || run.status;
+            const status = ['success','failure','cancelled'].includes(conclusion) ? conclusion : 'in_progress';
+            const headMsg =
+              (context.payload.head_commit && context.payload.head_commit.message) ||
+              (context.payload.pull_request && context.payload.pull_request.title) ||
+              '';
+            const body = {
+              runId: String(context.runId),
+              runNumber: context.run.run_number,
+              branch: context.ref.replace('refs/heads/', ''),
+              event: context.eventName,
+              commitSha: context.sha,
+              commitMsg: headMsg,
+              author: context.actor,
+              status,
+            };
+            try {
+              if (!process.env.CI_TOK) { console.log('CI_REPORT_TOKEN not set — skipping'); return; }
+              const res = await fetch(process.env.CI_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.CI_TOK },
+                body: JSON.stringify(body),
+              });
+              console.log('ci-report:', res.status, await res.text());
+            } catch (e) { console.error('report failed (non-fatal):', e.message); }
+        env:
+          CI_URL: ${{ env.CI_URL }}
+          CI_TOK: ${{ env.CI_TOK }}

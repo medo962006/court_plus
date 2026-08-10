@@ -31,7 +31,7 @@ CREATE INDEX idx_profiles_full_name_trgm ON public.profiles USING GIN (full_name
 
 -- ─── Courts ───
 CREATE TABLE public.courts (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name            TEXT NOT NULL,
   center          TEXT NOT NULL,
   sport_type      TEXT NOT NULL,
@@ -54,7 +54,7 @@ CREATE INDEX idx_courts_coords ON public.courts(latitude, longitude);
 
 -- ─── Bookings ───
 CREATE TABLE public.bookings (
-  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id         UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   court_id        UUID NOT NULL REFERENCES public.courts(id) ON DELETE CASCADE,
   court_name      TEXT NOT NULL,
@@ -75,7 +75,7 @@ CREATE INDEX idx_bookings_status ON public.bookings(status);
 
 -- ─── Matches ───
 CREATE TABLE public.matches (
-  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   creator_id        UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   court_id          UUID NOT NULL REFERENCES public.courts(id) ON DELETE CASCADE,
   court_name        TEXT NOT NULL,
@@ -96,7 +96,7 @@ CREATE INDEX idx_matches_status ON public.matches(status);
 
 -- ─── Match Players ───
 CREATE TABLE public.match_players (
-  id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   match_id  UUID NOT NULL REFERENCES public.matches(id) ON DELETE CASCADE,
   user_id   UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   status    TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','declined')),
@@ -106,7 +106,7 @@ CREATE TABLE public.match_players (
 
 -- ─── Invitations ───
 CREATE TABLE public.invitations (
-  id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sender_id   UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   receiver_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   match_id    UUID REFERENCES public.matches(id) ON DELETE SET NULL,
@@ -123,7 +123,7 @@ CREATE INDEX idx_invitations_status ON public.invitations(status);
 
 -- ─── Reviews ───
 CREATE TABLE public.reviews (
-  id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id   UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   court_id  UUID NOT NULL REFERENCES public.courts(id) ON DELETE CASCADE,
   rating    INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
@@ -135,7 +135,7 @@ CREATE INDEX idx_reviews_court ON public.reviews(court_id);
 
 -- ─── Moments ───
 CREATE TABLE public.moments (
-  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   image_url   TEXT NOT NULL,
   caption     TEXT,
@@ -145,7 +145,7 @@ CREATE TABLE public.moments (
 
 -- ─── Payments ───
 CREATE TABLE public.payments (
-  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_id  UUID REFERENCES public.bookings(id) ON DELETE SET NULL,
   user_id     UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   amount      REAL NOT NULL,
@@ -156,7 +156,7 @@ CREATE TABLE public.payments (
 
 -- ─── Notifications ───
 CREATE TABLE public.notifications (
-  id        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id   UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   type      TEXT NOT NULL,
   title     TEXT NOT NULL,

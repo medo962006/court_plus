@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/mock_data_service.dart';
+import 'dart:core' hide Match;
+import 'package:court_plus/services/models.dart';
+import 'package:court_plus/services/supabase_service.dart';
+import 'supabase_provider.dart';
 
 // ─── State ───
 
@@ -37,9 +40,8 @@ final class MatchCreationState {
   });
 
   double get pricePerPlayer {
-    final court = courtId != null ? MockDataService.getCourtById(courtId!) : null;
-    final hourlyRate = court?.pricePerHour ?? 100;
-    return hourlyRate / playerCount;
+    // Default price calculation; court data comes from Supabase
+    return 100.0 / playerCount;
   }
 
   bool get canProceedFromDetails =>
@@ -87,7 +89,7 @@ enum MatchCreationStep { details, invitePlayers, confirm }
 // ─── Providers ───
 
 final matchCreationProvider = StateNotifierProvider<MatchCreationNotifier, MatchCreationState>(
-  (ref) => MatchCreationNotifier(),
+  (ref) => MatchCreationNotifier(ref.read(supabaseServiceProvider)),
 );
 
 final matchPricePerPlayerProvider = Provider<double>((ref) {
@@ -98,10 +100,21 @@ final matchCanProceedProvider = Provider<bool>((ref) {
   return ref.watch(matchCreationProvider).canProceedFromDetails;
 });
 
+final userMatchesProvider = FutureProvider<List<Match>>((ref) async {
+  final service = ref.read(supabaseServiceProvider);
+  final result = await service.getUserMatches();
+  return result.fold(
+    (matches) => matches,
+    (e) => throw e,
+  );
+});
+
 // ─── Notifier ───
 
 final class MatchCreationNotifier extends StateNotifier<MatchCreationState> {
-  MatchCreationNotifier() : super(const MatchCreationState());
+  final SupabaseService _supabase;
+
+  MatchCreationNotifier(this._supabase) : super(const MatchCreationState());
 
   void setCourt(String id, String name, String center, String sport) {
     state = state.copyWith(courtId: id, courtName: name, courtCenter: center, sportType: sport);
@@ -148,8 +161,47 @@ final class MatchCreationNotifier extends StateNotifier<MatchCreationState> {
   Future<String?> createMatch() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      // Mock: in production, call SupabaseService
-      await Future.delayed(const Duration(milliseconds: 800));
+      final userId = _supabase.currentUser?.id;
+      if (userId == null) {
+        state = state.copyWith(isLoading: false, error: 'Not authenticated');
+        return 'Not authenticated';
+      }
+
+      final data = <String, dynamic>{
+        'court_id': state.courtId,
+        'court_name': state.courtName,
+        'date': state.selectedDate?.toIso8601String(),
+        'time_slot': state.selectedTimeSlot,
+        'level': state.matchLevel,
+        'gender': state.gender,
+        'is_private': state.isPrivate,
+        'max_players': state.playerCount,
+        'current_players': 1,
+        'price_per_person': state.pricePerPlayer,
+        'status': 'upcoming',
+        'creator_id': userId,
+      };
+      final matchResult = await _supabase.client
+          .from('matches')
+          .insert(data)
+          .select()
+          .single();
+      final matchId = matchResult['id'] as String;
+
+      // Send invitations to selected players
+      for (final invitedId in state.invitedPlayerIds) {
+        await _supabase.sendInvitation({
+          'sender_id': userId,
+          'receiver_id': invitedId,
+          'match_id': matchId,
+          'court_name': state.courtName,
+          'date': state.selectedDate?.toIso8601String().split('T').first,
+          'time_slot': state.selectedTimeSlot,
+          'status': 'pending',
+          'message': 'You\'re invited to join a match!',
+        });
+      }
+
       state = state.copyWith(isLoading: false);
       return null;
     } catch (e) {

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Court+ — Product Clarifications &amp; Launch Prerequisites</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
+    color: #1a1d23;
+    background: #f5f6f8;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 210mm; margin: 0 auto; padding: 0; }
+  section { background: #fff; border-radius: 12px; margin-bottom: 20px; padding: 28px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); page-break-inside: avoid; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; font-weight: 700; margin-bottom: 14px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+  h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; color: #374151; }
+  h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #1a1d23; }
+  p { font-size: 14px; color: #4b5563; margin-bottom: 12px; }
+  .cover {
+    background: linear-gradient(135deg, #0d1117 0%, #1a2332 100%);
+    color: #fff; padding: 48px 40px; border-radius: 12px; margin-bottom: 20px; page-break-inside: avoid;
+  }
+  .cover h1 { font-size: 36px; margin-bottom: 4px; }
+  .cover .tagline { font-size: 17px; color: #9ca3af; margin-bottom: 20px; }
+  .cover .meta { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 16px; }
+  .cover .meta-item { display: flex; flex-direction: column; }
+  .cover .meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }
+  .cover .meta-value { font-size: 14px; font-weight: 600; color: #e5e7eb; }
+  .cover .doc-title { font-size: 13px; color: #9ca3af; margin-top: 20px; padding-top: 16px; border-top: 1px solid #1f2937; }
+
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; }
+  .badge-red { background: #fce4ec; color: #b71c1c; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-purple { background: #ede9fe; color: #5b21b6; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-gray { background: #f3f4f6; color: #6b7280; }
+
+  .qa-card { background: #f9fafb; border-radius: 10px; padding: 16px 18px; border: 1px solid #f0f0f0; margin-bottom: 12px; page-break-inside: avoid; }
+  .qa-card .q { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #1a1d23; display: flex; align-items: flex-start; gap: 8px; }
+  .qa-card .q-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: #e5e7eb; font-size: 12px; font-weight: 700; color: #374151; flex-shrink: 0; margin-top: 1px; }
+  .qa-card .q-body { margin-left: 30px; }
+  .qa-card .q-body ul { list-style: none; padding: 0; }
+  .qa-card .q-body ul li { padding: 4px 0 4px 16px; font-size: 13px; color: #4b5563; position: relative; }
+  .qa-card .q-body ul li::before { content: '\2192'; position: absolute; left: 0; color: #9ca3af; }
+
+  .section-count { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; background: #f3f4f6; font-size: 13px; font-weight: 700; color: #374151; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; font-weight: 600; padding: 8px 10px; border-bottom: 2px solid #e5e7eb; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace; font-size: 12px; }
+  .tight-col { width: 1%; white-space: nowrap; }
+
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding: 8px 0 8px 28px; font-size: 14px; color: #4b5563; position: relative; border-bottom: 1px solid #f3f4f6; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '\25A1'; position: absolute; left: 0; font-size: 16px; color: #9ca3af; }
+  .checklist li strong { color: #1a1d23; }
+
+  .signoff { margin-top: 16px; padding: 20px; background: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb; page-break-inside: avoid; }
+  .signoff table { margin-top: 12px; }
+  .signoff td { border-bottom: none; padding: 8px 12px; }
+
+  @media print {
+    body { background: #fff; }
+    .page { max-width: 100%; }
+    section { box-shadow: none; border: 1px solid #e5e7eb; page-break-inside: avoid; }
+    .cover { background: #0d1117 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .badge, .qa-card, .signoff { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .qa-card { page-break-inside: avoid; }
+  }
+
+  @media (max-width: 700px) {
+    section { padding: 20px 16px; }
+    .cover { padding: 32px 20px; }
+    .cover h1 { font-size: 28px; }
+    .cover .meta { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cover -->
+  <div class="cover">
+    <h1>Court+</h1>
+    <div class="tagline">Product Clarifications &amp; Commercial Launch Prerequisites</div>
+    <div class="meta">
+      <div class="meta-item"><span class="meta-label">Prepared For</span><span class="meta-value">Agency Leadership &amp; Technical Team</span></div>
+      <div class="meta-item"><span class="meta-label">Target Market</span><span class="meta-value">Saudi Arabia &mdash; Tennis &amp; Padel Court Booking</span></div>
+      <div class="meta-item"><span class="meta-label">Doc Type</span><span class="meta-value">Formal Prerequisites &amp; Clarifications Request</span></div>
+      <div class="meta-item"><span class="meta-label">Status</span><span class="badge badge-red" style="font-size:12px;padding:3px 14px;">AWAITING RESPONSE</span></div>
+    </div>
+    <div class="doc-title">Document Purpose: Formal request for architectural definitions, design assets, and commercial platform credentials required for v1.0 Production Release.</div>
+  </div>
+
+  <!-- Section 1 -->
+  <section>
+    <h2><span class="section-count">1</span> Executive Summary</h2>
+    <p>Court+ has completed its core engineering phase. Authentication (email/password, OTP, guest mode), slot-locking via Supabase RPCs, court discovery and filtering, profile management, and the 4-step booking wizard are all functional and verified with zero analyzer errors. The application architecture is stable and ready for the final production integration phase.</p>
+    <p>However, moving from a verified prototype to a commercially released product in the Saudi market requires explicit product definitions from agency leadership and access to operational credentials that cannot be mocked or stubbed. This document formally requests the clarifications, design handover, and account provisioning items that must be resolved before Court+ can be submitted to Apple App Store and Google Play Store.</p>
+  </section>
+
+  <!-- Section 2 -->
+  <section>
+    <h2><span class="section-count">2</span> Core Product &amp; Architecture Clarifications</h2>
+    <p style="margin-bottom:14px;">The following questions require written confirmation from Agency Leadership to finalise the social, discovery, and partner onboarding layers.</p>
+
+    <h3 style="display:flex;align-items:center;gap:8px;"><span class="badge badge-blue">SOCIAL</span> Social &amp; Community Framework</h3>
+    <div class="qa-card">
+      <div class="q"><span class="q-num">1</span> What is the full vision for the social layer?</div>
+      <div class="q-body">
+        <ul>
+          <li>Is the social layer intended as a <strong>lightweight companion</strong> (rate players, share match results) or a <strong>full community platform</strong> (friend lists, feeds, leaderboards)?</li>
+          <li>Should we implement a <strong>friend request / accept</strong> system, or is social proximity based on shared court bookings and match participation?</li>
+          <li>Are there plans for <strong>player reputation or skill rating systems</strong> beyond the current static star rating on profiles?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="qa-card">
+      <div class="q"><span class="q-num">2</span> How do players discover and connect with each other?</div>
+      <div class="q-body">
+        <ul>
+          <li>Search by name, username, or shared courts/coaches?</li>
+          <li>Suggested connections based on recent matches at the same venue?</li>
+          <li>QR code or shareable profile links for offline meetups?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="qa-card">
+      <div class="q"><span class="q-num">3</span> What is the messaging architecture?</div>
+      <div class="q-body">
+        <ul>
+          <li>Strictly <strong>1-on-1 direct messaging</strong> between connected players?</li>
+          <li><strong>Group chats</strong> for match lobbies (captain + invited players)?</li>
+          <li>Is real-time presence (typing indicators, read receipts) required?</li>
+          <li>Should messaging use <strong>Supabase Realtime</strong> channels or a dedicated service (Sendbird, Stream Chat)?</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="display:flex;align-items:center;gap:8px;margin-top:16px;"><span class="badge badge-purple">MOMENTS</span> Moments &amp; Timeline Discovery</h3>
+    <div class="qa-card">
+      <div class="q"><span class="q-num">4</span> How are "Moments" viewed across the platform?</div>
+      <div class="q-body">
+        <ul>
+          <li><strong>Private Friends Feed:</strong> Only posts from followed/connected players appear in a chronological timeline?</li>
+          <li><strong>Global Public Feed:</strong> All user-uploaded moments visible to everyone, with algorithmic or recent-first sorting?</li>
+          <li><strong>Venue-specific feed:</strong> Moments tagged to a particular court appear on that court's detail page?</li>
+        </ul>
+      </div>
+    </div>
+    <div class="qa-card">
+      <div class="q"><span class="q-num">5</span> What is the content moderation strategy?</div>
+      <div class="q-body">
+        <ul>
+          <li>Automated image/content filtering on upload?</li>
+          <li>User-flag/report mechanism with admin review queue?</li>
+          <li>Is there a need for a <strong>community guidelines</strong> document and in-app reporting flow?</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="display:flex;align-items:center;gap:8px;margin-top:16px;"><span class="badge badge-amber">OPERATIONS</span> Partner Onboarding (Courts &amp; Coaches)</h3>
+    <div class="qa-card">
+      <div class="q"><span class="q-num">6</span> What is the operational workflow for listing new courts and coaches?</div>
+      <div class="q-body">
+        <ul>
+          <li><strong>Self-service Partner Portal:</strong> Courts and coaches submit their own profiles for admin approval, including photos, pricing, and availability schedules?</li>
+          <li><strong>Manual provisioning:</strong> Agency/admin team ingests venue data via Supabase dashboard or seed scripts?</li>
+          <li><strong>Hybrid model:</strong> Partner submits, admin reviews and publishes?</li>
+          <li>Who owns the <strong>photography and media assets</strong> for each venue?</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3 -->
+  <section>
+    <h2><span class="section-count">3</span> Design &amp; Frontend Codebase Handover</h2>
+    <p>To ensure the Flutter implementation matches the approved product vision, the following handover items are required from the design and frontend teams.</p>
+
+    <div class="qa-card">
+      <div class="q"><span class="q-num">A</span> <span class="badge badge-blue">FIGMA</span>&ensp;Figma Master Design Schema</div>
+      <div class="q-body">
+        <ul>
+          <li>Full <strong>view/inspect access</strong> to the official Figma file covering all user flows: Onboarding, Auth, Home, Court Discovery, Booking Wizard, Profile, Social, Settings.</li>
+          <li>Complete <strong>component library</strong> (buttons, inputs, cards, bottom sheets, dialogs, status badges, skeleton states).</li>
+          <li>Design token specification: colour palette, typography scale (font sizes, weights, line heights), spacing grid, border radius values, and shadow/elevation definitions.</li>
+          <li><strong>Empty state, loading state, and error state</strong> mockups for every primary screen.</li>
+          <li>RTL layout mockups for the <strong>Arabic localisation</strong> variant.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="qa-card">
+      <div class="q"><span class="q-num">B</span> <span class="badge badge-blue">CODE</span>&ensp;Frontend Reference Codebase</div>
+      <div class="q-body">
+        <ul>
+          <li>Source repository access (GitHub / GitLab) or a zip archive of the reference frontend project.</li>
+          <li><strong>2&ndash;3 fully implemented reference screens</strong> demonstrating the agreed routing, state management (Riverpod), API service layer, and design theme configuration.</li>
+          <li>Any existing <strong>widget tests or integration tests</strong> to validate that the reference implementation matches the Figma designs.</li>
+          <li>CI/CD configuration files if the reference project includes automated build and deployment pipelines.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4 -->
+  <section>
+    <h2><span class="section-count">4</span> Mandatory Commercial Launch Prerequisites</h2>
+    <p>The items below are <strong>blocking dependencies</strong> for production release. Court+ cannot be submitted to Apple App Store, Google Play Store, or process live payments until these accounts and credentials are provisioned.</p>
+    <table>
+      <thead>
+        <tr><th class="tight-col">#</th><th>Item</th><th>Cost / Platform</th><th>Status</th><th>Justification</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="tight-col" style="text-align:center;font-weight:700;">1</td>
+          <td><strong>Saudi Payment Gateway</strong><br><span class="mono">Mada / HyperPay / Stripe</span></td>
+          <td>Regional SAR processing<br>~2&ndash;3% per transaction</td>
+          <td><span class="badge badge-red">MISSING</span></td>
+          <td>Unlocks Booking Step 4 live checkout. Required for confirming paid bookings via <span class="mono">confirm_booking_payment</span> RPC. Without this, the booking pipeline is a demo flow.</td>
+        </tr>
+        <tr>
+          <td class="tight-col" style="text-align:center;font-weight:700;">2</td>
+          <td><strong>Apple Developer Program</strong><br><span class="mono">Organization Account</span></td>
+          <td>$99 / year</td>
+          <td><span class="badge badge-red">MISSING</span></td>
+          <td>Required for Apple Sign-In OAuth (App Store requirement for any app offering social sign-in) and for App Store submission and distribution.</td>
+        </tr>
+        <tr>
+          <td class="tight-col" style="text-align:center;font-weight:700;">3</td>
+          <td><strong>Google Cloud &amp; Play Console</strong><br><span class="mono">Organization Access</span></td>
+          <td>$25 one-time (Play Console)</td>
+          <td><span class="badge badge-red">MISSING</span></td>
+          <td>Configures Google OAuth Client IDs for Google Sign-In. Required for Android app distribution via Google Play Store, and for enabling Google Maps SDK for the Explore screen.</td>
+        </tr>
+        <tr>
+          <td class="tight-col" style="text-align:center;font-weight:700;">4</td>
+          <td><strong>Supabase Pro Plan</strong><br><span class="mono">Production Upgrade</span></td>
+          <td>$25 / month (Pro)<br>or $599 / month (Team)</td>
+          <td><span class="badge badge-amber">FREE TIER</span></td>
+          <td>Current project runs on Supabase Free Tier (500 MB database, 1 GB bandwidth, 50,000 monthly active users). A Pro or Team plan is required for production traffic, database size >500 MB, and bandwidth beyond free thresholds.</td>
+        </tr>
+        <tr>
+          <td class="tight-col" style="text-align:center;font-weight:700;">5</td>
+          <td><strong>AI Development Subscriptions</strong><br><span class="mono">Claude Pro / Team</span></td>
+          <td>$20&ndash;$30 / month per seat</td>
+          <td><span class="badge badge-amber">ONGOING</span></td>
+          <td>Accelerates AI-assisted code generation, debugging, Flutter analysis, and migration tasks during the final integration sprint.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Section 5 -->
+  <section>
+    <h2><span class="section-count">5</span> Action Item Summary &amp; Sign-Off</h2>
+
+    <h3>Agency Deliverable Checklist</h3>
+    <ul class="checklist">
+      <li><strong>Clarifications (Section 2):</strong> Written confirmation on Social &amp; Community framework, Moments feed discovery model, and Partner Onboarding workflow.</li>
+      <li><strong>Design &amp; Code Handover (Section 3):</strong> Figma view/inspect access OR exported design tokens + 2&ndash;3 reference screens with source repository access.</li>
+      <li><strong>Account Provisioning (Section 4):</strong> Stripe/HyperPay merchant account credentials, Apple Developer Organization account access, Google Cloud / Play Console organization access, and Supabase Pro plan upgrade.</li>
+    </ul>
+
+    <div class="signoff">
+      <h3 style="margin-bottom:4px;">Acknowledgement &amp; Sign-Off</h3>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:4px;">By signing below, Agency Leadership confirms the above clarifications and prerequisites have been reviewed and will be actioned for the v1.0 production release timeline.</p>
+      <table>
+        <tr><td style="width:120px;font-size:13px;color:#4b5563;"><strong>Agency Representative</strong></td><td style="border-bottom:1px solid #d1d5db;height:32px;"></td><td style="width:40px;"></td><td style="width:80px;font-size:13px;color:#4b5563;"><strong>Date</strong></td><td style="border-bottom:1px solid #d1d5db;height:32px;width:120px;"></td></tr>
+        <tr><td style="font-size:13px;color:#4b5563;"><strong>Technical Lead</strong></td><td style="border-bottom:1px solid #d1d5db;height:32px;"></td><td></td><td style="font-size:13px;color:#4b5563;"><strong>Date</strong></td><td style="border-bottom:1px solid #d1d5db;height:32px;"></td></tr>
+      </table>
+    </div>
+
+    <p style="margin-top:16px;font-size:13px;color:#9ca3af;text-align:center;">Court+ — Built with Flutter &amp; Supabase. This document is part of a two-part executive package alongside the Product Status &amp; Pitch Document.</p>
+  </section>
+
+</div>
+</body>
+</html>

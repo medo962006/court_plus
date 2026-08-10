@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../routes.dart';
-import '../widgets/court_plus_logo.dart';
 import 'language_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -24,10 +23,13 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF0D1117),
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D1117),
       body: Center(
-        child: CourtPlusLogo(height: 90),
+        child: Image.asset(
+          'assets/logo_transparent.png',
+          height: 90,
+        ),
       ),
     );
   }

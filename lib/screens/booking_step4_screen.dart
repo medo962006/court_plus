@@ -1,24 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 import '../routes.dart';
 import '../theme/app_theme.dart';
+import '../presentation/providers/booking_provider.dart';
+import '../presentation/providers/courts_provider.dart';
 import '../services/models.dart';
-import '../services/mock_data_service.dart';
 
-class BookingStep4Screen extends StatefulWidget {
+class BookingStep4Screen extends ConsumerStatefulWidget {
   const BookingStep4Screen({super.key});
 
   @override
-  State<BookingStep4Screen> createState() => _BookingStep4ScreenState();
+  ConsumerState<BookingStep4Screen> createState() => _BookingStep4ScreenState();
 }
 
-class _BookingStep4ScreenState extends State<BookingStep4Screen> {
+class _BookingStep4ScreenState extends ConsumerState<BookingStep4Screen> {
   Court? _court;
   String _durationLabel = '';
   double _courtFee = 0;
   int _addonsSubtotal = 0;
   Map<String, int> _quantities = {};
+  int _paymentSplit = 1; // 0=Pay Your Part, 1=Pay Everything
 
   static const _addonPrices = {
     'Racket Rental': 20,
@@ -33,35 +36,44 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    if (args != null && _court == null) {
-      final courtId = args['courtId'] as String?;
-      if (courtId != null) {
-        _court = MockDataService.getCourtById(courtId);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_court != null) return;
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null) {
+        final courtId = args['courtId'] as String?;
+        if (courtId != null) {
+          final courts = ref.read(courtsProvider).value ?? [];
+          setState(() {
+            _court = courts.firstWhere((c) => c.id == courtId, orElse: () => courts.first);
+            _durationLabel = args['durationLabel'] as String? ?? '1 hour';
+            _courtFee = (args['courtFee'] as num?)?.toDouble() ?? 0;
+            _addonsSubtotal = (args['addonsSubtotal'] as num?)?.toInt() ?? 0;
+            _quantities = (args['quantities'] as Map<String, dynamic>?)
+                    ?.map((k, v) => MapEntry(k, (v as num).toInt())) ??
+                {};
+          });
+        }
       }
-      _durationLabel = args['durationLabel'] as String? ?? '1 hour';
-      _courtFee = (args['courtFee'] as num?)?.toDouble() ?? 0;
-      _addonsSubtotal = (args['addonsSubtotal'] as num?)?.toInt() ?? 0;
-      _quantities = (args['quantities'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, (v as num).toInt())) ??
-          {};
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final bookingState = ref.watch(bookingStateProvider);
+    final isLoading = bookingState.isLoading;
+
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: AppColors.lightBg,
       appBar: AppBar(
-        backgroundColor: AppColors.darkBg,
+        backgroundColor: AppColors.lightBg,
         elevation: 0,
         leading: IconButton(
-          icon: const Iconify(Ph.arrow_left, color: Colors.white),
+          icon: const Iconify(Ph.arrow_left, color: AppColors.lightText),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
           'Review Booking',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(color: AppColors.lightText, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
       ),
@@ -103,7 +115,7 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
                         const Text(
                           'Booking Summary',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.lightMuted,
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
                           ),
@@ -125,7 +137,7 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
                           const Text(
                             'Add-ons',
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: AppColors.lightMuted,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
                             ),
@@ -146,13 +158,13 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
                                   Expanded(
                                     child: Text(
                                       '${e.key} x${e.value}',
-                                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                                      style: const TextStyle(color: AppColors.lightMuted, fontSize: 14),
                                     ),
                                   ),
                                   Text(
                                     'SR $price',
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.lightMuted,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -180,7 +192,7 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
                             const Text(
                               'Total',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.lightMuted,
                                 fontSize: 17,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -188,6 +200,88 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
                             const Spacer(),
                             Text(
                               'SR ${_total.toInt()}',
+                              style: const TextStyle(
+                                color: AppColors.neonGreen,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Payment split (Pay Your Part / Pay Everything) ──
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkField,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.darkBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Book Summary',
+                          style: TextStyle(
+                            color: AppColors.lightMuted,
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (_court != null) ...[
+                          _summaryRow(Ph.tennis_ball, 'Court', _court!.name),
+                          const SizedBox(height: 10),
+                          _summaryRow(Ph.map_pin, 'Center', _court!.center),
+                          const SizedBox(height: 10),
+                        ],
+                        _summaryRow(Ph.hourglass, 'Duration', _durationLabel),
+                        const SizedBox(height: 10),
+                        _summaryRow(Ph.money, 'Court Fee', 'SR ${_courtFee.toInt()}'),
+                        const SizedBox(height: 16),
+                        const Divider(color: AppColors.darkBorder, height: 1),
+                        const SizedBox(height: 16),
+                        // Pay Your Part
+                        _paymentOption(
+                          context: context,
+                          icon: Ph.user_circle,
+                          label: 'Pay Your Part',
+                          subtitle: 'You only pay your share',
+                          amount: (_courtFee / 2).toInt(),
+                          selected: _paymentSplit == 0,
+                          onTap: () => setState(() => _paymentSplit = 0),
+                        ),
+                        const SizedBox(height: 8),
+                        // Pay Everything
+                        _paymentOption(
+                          context: context,
+                          icon: Ph.credit_card,
+                          label: 'Pay Everything',
+                          subtitle: 'Pay the full amount now',
+                          amount: _courtFee.toInt(),
+                          selected: _paymentSplit == 1,
+                          onTap: () => setState(() => _paymentSplit = 1),
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(color: AppColors.darkBorder, height: 1),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text(
+                              'TOTAL',
+                              style: TextStyle(
+                                color: AppColors.lightMuted,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              'SAR ${_paymentSplit == 0 ? (_courtFee / 2).toInt() : _courtFee.toInt()}',
                               style: const TextStyle(
                                 color: AppColors.neonGreen,
                                 fontSize: 22,
@@ -218,7 +312,7 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
                           child: Text(
                             'Free cancellation up to 24 hours before your booking.',
                             style: TextStyle(
-                              color: Colors.white60,
+                              color: AppColors.lightMuted,
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -243,8 +337,25 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
               width: double.infinity,
               height: 54,
               child: ElevatedButton(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed(Routes.paymentGateway),
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        final navigator = Navigator.of(context);
+                        final messenger = ScaffoldMessenger.of(context);
+                        ref.read(bookingStateProvider.notifier).setTotalAmount(_total);
+                        final bookingError = await ref.read(bookingStateProvider.notifier).createBooking();
+                        if (bookingError == null && mounted) {
+                          navigator.pushNamed(Routes.paymentGateway, arguments: {
+                            'courtFee': _courtFee,
+                            'addonsSubtotal': _addonsSubtotal,
+                            'quantities': _quantities.map((k, v) => MapEntry(k, v)),
+                          });
+                        } else if (bookingError != null && mounted) {
+                          messenger.showSnackBar(
+                            SnackBar(content: Text('Booking failed: $bookingError')),
+                          );
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.neonGreen,
                   foregroundColor: AppColors.darkText,
@@ -258,7 +369,12 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
                     fontFamily: AppTheme.fontFamily,
                   ),
                 ),
-                child: Row(
+                child: isLoading
+                    ? const SizedBox(
+                        width: 22, height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.darkText),
+                      )
+                    : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Iconify(Ph.credit_card, size: 20),
@@ -270,6 +386,69 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _paymentOption({
+    required BuildContext context,
+    required String icon,
+    required String label,
+    required String subtitle,
+    required int amount,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.neonGreen.withValues(alpha: 0.08) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.neonGreen : AppColors.darkBorder,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 22, height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? AppColors.neonGreen : AppColors.white60,
+                  width: 2,
+                ),
+                color: selected ? AppColors.neonGreen : Colors.transparent,
+              ),
+              child: selected
+                  ? const Icon(Icons.check, size: 14, color: AppColors.darkText)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(
+                    color: selected ? AppColors.neonGreen : AppColors.lightMuted,
+                    fontSize: 14, fontWeight: FontWeight.w600,
+                  )),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: const TextStyle(
+                    color: AppColors.lightMuted, fontSize: 11,
+                  )),
+                ],
+              ),
+            ),
+            Text('SR $amount', style: TextStyle(
+              color: selected ? AppColors.neonGreen : AppColors.lightMuted,
+              fontSize: 15, fontWeight: FontWeight.bold,
+            )),
+          ],
+        ),
       ),
     );
   }
@@ -313,13 +492,13 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(color: Colors.white60, fontSize: 14),
+            style: const TextStyle(color: AppColors.lightMuted, fontSize: 14),
           ),
         ),
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.lightMuted,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -333,13 +512,13 @@ class _BookingStep4ScreenState extends State<BookingStep4Screen> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white60, fontSize: 14),
+          style: const TextStyle(color: AppColors.lightMuted, fontSize: 14),
         ),
         const Spacer(),
         Text(
           amount,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.lightMuted,
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
