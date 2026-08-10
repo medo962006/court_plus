@@ -96,7 +96,9 @@ jobs:
           done
 
   # Report run status to the ops dashboard. Always runs (even on failure/timeout)
-  # so the dashboard records red runs too. Reporting failure must never fail CI.
+  # so the dashboard records red runs too — but FIRST waits for the workflow run
+  # to conclude so the recorded status is final, not "in_progress". Reporting
+  # failures must never fail CI.
   report:
     name: Report to Ops Dashboard
     needs: build_android
@@ -108,11 +110,20 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
-            const { data: run } = await github.rest.actions.getWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: context.runId,
-            });
+            const { owner, repo } = context.repo;
+            const runId = context.runId;
+            // The report job can finish before GitHub finalizes the run's
+            // conclusion (build/deploy are skipped on test failure). Poll up to
+            // 90s so we record the true status, not "in_progress".
+            const start = Date.now();
+            let run;
+            do {
+              const r = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+              run = r.data;
+              if (run.conclusion) break;
+              await new Promise((res) => setTimeout(res, 5000));
+            } while (Date.now() - start < 90000);
+
             const conclusion = run.conclusion || run.status;
             const status = ['success', 'failure', 'cancelled'].includes(conclusion)
               ? conclusion
@@ -122,7 +133,7 @@ jobs:
               (context.payload.pull_request && context.payload.pull_request.title) ||
               '';
             const body = {
-              runId: String(context.runId),
+              runId: String(runId),
               runNumber: run.run_number,
               branch: context.ref.replace('refs/heads/', ''),
               event: context.eventName,
