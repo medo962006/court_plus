@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     const body = await req.json()
 
     // ── Run upsert ─────────────────────────────────────────────────────────
-    const runId = body?.runId ?? crypto.randomUUID()
+    const runId = body?.runId ?? String(Date.now())
     const run = {
       id: runId,
       run_number: body.runNumber ?? 0,
