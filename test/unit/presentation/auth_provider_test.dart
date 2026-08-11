@@ -1,63 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:court_plus/core/result.dart';
 import 'package:court_plus/services/models.dart';
-import 'package:court_plus/services/supabase_service.dart';
 import 'package:court_plus/presentation/providers/auth_provider.dart';
-
-/// Hand-rolled test service that replaces mockito.
-class TestableSupabaseService extends SupabaseService {
-  TestableSupabaseService() : super.test();
-  Future<Result<void>> Function(String email)? sendOtpOverride;
-  Future<Result<UserProfile?>> Function({
-    required String email,
-    required String code,
-    String? fullName,
-    String? username,
-  })? verifyOtpOverride;
-  Future<Result<void>> Function()? signOutOverride;
-  Future<Result<UserProfile?>> Function()? signInWithGoogleOverride;
-  Future<Result<UserProfile?>> Function()? signInWithAppleOverride;
-
-  @override
-  Future<Result<void>> sendOtp(String email) =>
-      sendOtpOverride?.call(email) ?? super.sendOtp(email);
-
-  @override
-  Future<Result<UserProfile?>> verifyOtp({
-    required String email,
-    required String code,
-    String? fullName,
-    String? username,
-  }) =>
-      verifyOtpOverride?.call(
-        email: email,
-        code: code,
-        fullName: fullName,
-        username: username,
-      ) ??
-      super.verifyOtp(
-        email: email,
-        code: code,
-        fullName: fullName,
-        username: username,
-      );
-
-  @override
-  Future<Result<void>> signOut() =>
-      signOutOverride != null ? signOutOverride!() : Future.value(Result.success(null));
-
-  @override
-  Future<Result<UserProfile?>> signInWithGoogle() =>
-      signInWithGoogleOverride != null
-          ? signInWithGoogleOverride!()
-          : Future.value(Result.failure(AuthException('Not mocked')));
-
-  @override
-  Future<Result<UserProfile?>> signInWithApple() =>
-      signInWithAppleOverride != null
-          ? signInWithAppleOverride!()
-          : Future.value(Result.failure(AuthException('Not mocked')));
-}
+import '../../helpers/testable_supabase_service.dart';
 
 UserProfile _user({
   String id = 'test-user',
