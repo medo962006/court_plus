@@ -108,6 +108,15 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/github-script@v7
+        env:
+          # github-script v7 does not expose `needs` as a JS global, so resolve
+          # the upstream results here (valid in workflow expressions) and read
+          # them in the script.
+          R_ANALYZE: ${{ needs.analyze.result }}
+          R_TEST: ${{ needs.test.result }}
+          R_BUILD: ${{ needs.build_android.result }}
+          CI_URL: ${{ env.CI_URL }}
+          CI_TOK: ${{ env.CI_TOK }}
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -116,7 +125,7 @@ jobs:
             // isn't finalized until AFTER this job finishes (circular). Derive
             // the true result from the upstream jobs instead — their results
             // are all finalized before report runs.
-            const results = ['analyze', 'test', 'build_android'].map((n) => needs[n].result);
+            const results = [process.env.R_ANALYZE, process.env.R_TEST, process.env.R_BUILD];
             const status = results.includes('failure')
               ? 'failure'
               : results.includes('cancelled')
@@ -153,6 +162,3 @@ jobs:
             } catch (e) {
               console.error('report failed (non-fatal):', e.message);
             }
-        env:
-          CI_URL: ${{ env.CI_URL }}
-          CI_TOK: ${{ env.CI_TOK }}
