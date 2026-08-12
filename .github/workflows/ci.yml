@@ -24,7 +24,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.x
+          flutter-version: 3.38.4
       - run: cp .env.example .env
       - run: flutter pub get
       - run: dart analyze lib/
@@ -40,7 +40,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.x
+          flutter-version: 3.38.4
       - run: cp .env.example .env
       - run: flutter pub get
       - run: flutter test
@@ -59,7 +59,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.x
+          flutter-version: 3.38.4
       - run: cp .env.example .env
       - run: flutter pub get
       - run: flutter build apk --debug
