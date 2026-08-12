@@ -112,29 +112,23 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const runId = context.runId;
-            // The report job can finish before GitHub finalizes the run's
-            // conclusion (build/deploy are skipped on test failure). Poll up to
-            // 90s so we record the true status, not "in_progress".
-            const start = Date.now();
-            let run;
-            do {
-              const r = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
-              run = r.data;
-              if (run.conclusion) break;
-              await new Promise((res) => setTimeout(res, 5000));
-            } while (Date.now() - start < 90000);
-
-            const conclusion = run.conclusion || run.status;
-            const status = ['success', 'failure', 'cancelled'].includes(conclusion)
-              ? conclusion
-              : 'in_progress';
+            // The report job is part of the run, so the run's own `conclusion`
+            // isn't finalized until AFTER this job finishes (circular). Derive
+            // the true result from the upstream jobs instead — their results
+            // are all finalized before report runs.
+            const results = ['analyze', 'tests', 'build_android'].map((n) => needs[n].result);
+            const status = results.includes('failure')
+              ? 'failure'
+              : results.includes('cancelled')
+                ? 'cancelled'
+                : 'success';
             const headMsg =
               (context.payload.head_commit && context.payload.head_commit.message) ||
               (context.payload.pull_request && context.payload.pull_request.title) ||
               '';
             const body = {
               runId: String(runId),
-              runNumber: run.run_number,
+              runNumber: Number(process.env.GITHUB_RUN_NUMBER || 0),
               branch: context.ref.replace('refs/heads/', ''),
               event: context.eventName,
               commitSha: context.sha,
