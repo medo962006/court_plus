@@ -96,7 +96,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          for fn in ingest-logs heartbeat ci-report create-payment-intent stripe-webhook create-test-user create-admin; do
+          for fn in ingest-logs heartbeat ci-report create-payment-intent stripe-webhook create-test-user create-admin simulate-usage; do
             supabase functions deploy "$fn" --project-ref fnyekgsajrrihefqyaiq --no-verify-jwt || echo "deploy $fn failed"
           done
 

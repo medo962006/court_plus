@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabase, supabaseAnonKey, supabaseUrl } from './supabase'
 import {
   stubCoaches,
   stubCourts,
@@ -281,5 +281,47 @@ export const api = {
       appEnv: (r.app_env as string) ?? null,
       createdAt: String(r.created_at),
     }))
+  },
+
+  /** Generate realistic activity for ~N users (auth-gated edge function). */
+  async simulateUsage(users = 10000): Promise<{
+    ok: boolean
+    users?: number
+    activeSessions?: number
+    events?: number
+    error?: string
+  }> {
+    if (!supabase) return { ok: false, error: 'Supabase not configured' }
+    const { data: sess } = await supabase.auth.getSession()
+    const token = sess.session?.access_token ?? ''
+    let res: Response
+    try {
+      res = await fetch(`${supabaseUrl}/functions/v1/simulate-usage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ users }),
+      })
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : 'network error' }
+    }
+    const data = (await res.json().catch(() => null)) as {
+      ok?: boolean
+      users?: number
+      activeSessions?: number
+      events?: number
+      error?: string
+    } | null
+    if (!res.ok) return { ok: false, error: data?.error ?? `HTTP ${res.status}` }
+    return (data ?? { ok: false, error: 'No response' }) as {
+      ok: boolean
+      users?: number
+      activeSessions?: number
+      events?: number
+      error?: string
+    }
   },
 }

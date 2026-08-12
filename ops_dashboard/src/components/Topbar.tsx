@@ -1,9 +1,23 @@
-import { Bell, Moon, SignOut, Wrench } from '@phosphor-icons/react'
+import { Bell, Moon, Rocket, SignOut, SpinnerGap, Wrench } from '@phosphor-icons/react'
+import { useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { hasSupabase } from '../lib/supabase'
+import { api } from '../lib/api'
 
 export default function Topbar({ title }: { title: string }) {
   const { profile, isAdmin, signOut } = useAuth()
+  const [simulating, setSimulating] = useState(false)
+  const [simNote, setSimNote] = useState<string | null>(null)
+
+  async function runSimulation() {
+    if (simulating) return
+    setSimulating(true)
+    setSimNote(null)
+    const res = await api.simulateUsage(10000)
+    setSimulating(false)
+    setSimNote(res.ok ? `+${(res.events ?? 0).toLocaleString()} events` : 'sim failed')
+    setTimeout(() => setSimNote(null), 4000)
+  }
 
   return (
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-panel px-6">
@@ -24,6 +38,19 @@ export default function Topbar({ title }: { title: string }) {
         </button>
         <button className="rounded-lg p-2 text-muted transition-colors hover:bg-slate-100">
           <Wrench size={20} weight="bold" />
+        </button>
+        {simNote && (
+          <span className="rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+            {simNote}
+          </span>
+        )}
+        <button
+          onClick={runSimulation}
+          disabled={simulating}
+          title="Simulate 10,000 users' activity over the last 24h"
+          className="rounded-lg p-2 text-muted transition-colors hover:bg-slate-100 disabled:opacity-60"
+        >
+          {simulating ? <SpinnerGap className="animate-spin" size={20} weight="bold" /> : <Rocket size={20} weight="bold" />}
         </button>
         <button className="rounded-lg p-2 text-muted transition-colors hover:bg-slate-100">
           <Moon size={20} weight="bold" />
