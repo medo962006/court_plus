@@ -22,8 +22,8 @@ void main() {
     FlutterError.onError = errors.add;
     addTearDown(() => FlutterError.onError = oldHandler);
 
-    tester.view.physicalSize = const Size(1080, 2340);
-    tester.view.devicePixelRatio = 3.0; // logical 360x780
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0; // logical 400x800 — small raster = fast CI
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
