@@ -1,8 +1,6 @@
 import {
   CalendarCheck,
-  CheckCircle,
   Eye,
-  Lightning,
   Pulse,
   XCircle,
 } from '@phosphor-icons/react'
@@ -27,20 +25,16 @@ const humanTime = (iso: string) => {
 }
 
 const tone = (e: string): string => {
-  if (e.includes('payment_succeeded')) return 'bg-emerald-500'
   if (e.includes('booking')) return 'bg-sky-500'
   if (e.includes('failed')) return 'bg-red-500'
-  if (e.includes('payment')) return 'bg-amber-500'
   if (e.includes('screen') || e.includes('viewed')) return 'bg-slate-400'
   return 'bg-brand-500'
 }
 
 const Icon = ({ event }: { event: string }) => {
-  if (event.includes('payment_succeeded')) return <CheckCircle size={13} weight="bold" />
   if (event.includes('failed')) return <XCircle size={13} weight="bold" />
   if (event.includes('booking')) return <CalendarCheck size={13} weight="bold" />
   if (event.includes('screen') || event.includes('viewed')) return <Eye size={13} weight="bold" />
-  if (event.includes('payment')) return <Lightning size={13} weight="bold" />
   return <Pulse size={13} weight="bold" />
 }
 
@@ -52,9 +46,12 @@ function propsSnippet(p: Record<string, unknown>): string {
   return parts.slice(0, 3).join(' ')
 }
 
+/** Exclude payment telemetry — the payment workflow isn't implemented yet (WIP). */
+const isVisible = (e: { event?: string }) => !e.event?.includes('payment')
+
 export default function ActivityFeed() {
   const { data, loading } = usePolling(() => api.events(40), [], 5000)
-  const events = data ?? []
+  const events = (data ?? []).filter(isVisible)
 
   const counts = new Map<string, number>()
   for (const e of events) counts.set(e.event, (counts.get(e.event) ?? 0) + 1)

@@ -21,8 +21,7 @@ export const stubServices: ServiceHeartbeat[] = [
   { id: 'svc-2', service: 'supabase-auth', status: 'healthy', lastSeenAt: ago(1), errorRatePct: 0.1, p95Ms: 240, uptimePct: 100 },
   { id: 'svc-3', service: 'postgres-db', status: 'healthy', lastSeenAt: ago(0), errorRatePct: 0.05, p95Ms: 120, uptimePct: 100 },
   { id: 'svc-4', service: 'edge-functions', status: 'healthy', lastSeenAt: ago(3), errorRatePct: 1.2, p95Ms: 480, uptimePct: 99.95 },
-  { id: 'svc-5', service: 'stripe-gateway', status: 'degraded', lastSeenAt: ago(9), errorRatePct: 3.4, p95Ms: 890, uptimePct: 99.4 },
-  { id: 'svc-6', service: 'push-notifications', status: 'down', lastSeenAt: ago(68), errorRatePct: 0, p95Ms: 0, uptimePct: 87.2 },
+  { id: 'svc-5', service: 'push-notifications', status: 'down', lastSeenAt: ago(68), errorRatePct: 0, p95Ms: 0, uptimePct: 87.2 },
 ]
 
 const stubJobs = (
@@ -45,13 +44,13 @@ export const stubRuns: PipelineRun[] = [
     id: 'run-104', runNumber: 104, branch: 'main', event: 'push', commitSha: sha('a'), commitMsg: 'feat: release v1.0.0 candidate', author: 'khalid.omar', status: 'in_progress', startedAt: ago(4), durationMs: (now - Date.parse(ago(4))) | 0,
   },
   {
-    id: 'run-103', runNumber: 103, branch: 'main', event: 'push', commitSha: sha('b'), commitMsg: 'feat(booking): wire confirm_booking_payment RPC', author: 'sarah.ahmed', status: 'success', startedAt: ago(1480), finishedAt: ago(1465), durationMs: 15 * 60 * 1000,
+    id: 'run-103', runNumber: 103, branch: 'main', event: 'push', commitSha: sha('b'), commitMsg: 'feat(booking): wire booking lifecycle RPCs', author: 'sarah.ahmed', status: 'success', startedAt: ago(1480), finishedAt: ago(1465), durationMs: 15 * 60 * 1000,
   },
   {
     id: 'run-102', runNumber: 102, branch: 'dev', event: 'pull_request', commitSha: sha('c'), commitMsg: 'fix(auth): OtpType.email for 6-digit codes', author: 'fatima.hassan', status: 'success', startedAt: ago(3120), finishedAt: ago(3100), durationMs: 20 * 60 * 1000,
   },
   {
-    id: 'run-101', runNumber: 101, branch: 'dev', event: 'pull_request', commitSha: sha('d'), commitMsg: 'wip: payment gateway (simulation)', author: 'mike.johnson', status: 'failure', startedAt: ago(4400), finishedAt: ago(4412), durationMs: 12 * 60 * 1000,
+    id: 'run-101', runNumber: 101, branch: 'dev', event: 'pull_request', commitSha: sha('d'), commitMsg: 'wip: booking flow (simulation)', author: 'mike.johnson', status: 'failure', startedAt: ago(4400), finishedAt: ago(4412), durationMs: 12 * 60 * 1000,
   },
   {
     id: 'run-100', runNumber: 100, branch: 'main', event: 'release', commitSha: sha('e'), commitMsg: 'chore: tag v0.9.0', author: 'cicd-bot', status: 'success', startedAt: ago(8640), finishedAt: ago(8600), durationMs: 40 * 60 * 1000,
@@ -73,18 +72,16 @@ export const stubRunsJobs: Record<string, PipelineJob[]> = {
 const lvl = (L: LogEntry['level']) => L
 
 export const stubLogs: LogEntry[] = [
-  { id: 'log-1', level: lvl('error'), service: 'edge-functions', message: 'create-payment-intent failed: missing STRIPE_SECRET_KEY', createdAt: ago(6), appEnv: 'production', context: { function: 'create-payment-intent', code: 'ENV_MISSING' } },
   { id: 'log-2', level: lvl('warn'), service: 'mobile-app', message: 'verifyOtp rejected: OtpType.magiclink used for 6-digit code', createdAt: ago(28), appEnv: 'production', context: { screen: 'otp', hint: 'expected OtpType.email' } },
   { id: 'log-3', level: lvl('info'), service: 'supabase-auth', message: 'signup succeeded for user +96650****', createdAt: ago(41), appEnv: 'production' },
   { id: 'log-4', level: lvl('error'), service: 'postgres-db', message: 'release_stale_locks has no scheduled runner (pg_cron miss)', createdAt: ago(75), appEnv: 'production', context: { rpc: 'release_stale_locks' } },
-  { id: 'log-5', level: lvl('info'), service: 'mobile-app', message: 'booking created (pending) — payment simulated', createdAt: ago(120), appEnv: 'production', context: { bookingStatus: 'pending' } },
+  { id: 'log-5', level: lvl('info'), service: 'mobile-app', message: 'booking created (pending)', createdAt: ago(120), appEnv: 'production', context: { bookingStatus: 'pending' } },
   { id: 'log-6', level: lvl('debug'), service: 'mobile-app', message: 'locale switched to ar', createdAt: ago(190) },
-  { id: 'log-7', level: lvl('warn'), service: 'stripe-gateway', message: 'webhook signature verification failed', createdAt: ago(300), appEnv: 'production' },
   { id: 'log-8', level: lvl('info'), service: 'edge-functions', message: 'ci-report: run #103 finalized (success)', createdAt: ago(1465), appEnv: 'production', context: { run: 103 } },
   { id: 'log-9', level: lvl('debug'), service: 'database', message: 'courts: 6 rows scanned for search "tennis"', createdAt: ago(380) },
   { id: 'log-10', level: lvl('error'), service: 'mobile-app', message: 'Unhandled exception on BookingStep2 add-ons', createdAt: ago(520), appVersion: '1.0.0+1', context: { stackTop: 'late Locale error' } },
   { id: 'log-11', level: lvl('info'), service: 'mobile-app', message: 'session restored for existing user', createdAt: ago(2), appEnv: 'production' },
-  { id: 'log-12', level: lvl('debug'), service: 'edge-functions', message: 'heartbeat updated for stripe-gateway', createdAt: ago(9) },
+  { id: 'log-12', level: lvl('debug'), service: 'edge-functions', message: 'heartbeat updated for edge-functions', createdAt: ago(9) },
 ]
 
 export const stubMetrics: MetricPoint[] = [
@@ -118,7 +115,7 @@ export const stubCoaches: Coach[] = [
 ]
 
 export const stubOverview: SystemOverview = {
-  serviceCount: 6,
+  serviceCount: 5,
   servicesDown: 1,
   activeCourts: stubCourts.filter((c) => c.is_active).length,
   activeCoaches: stubCoaches.filter((c) => c.is_active).length,
