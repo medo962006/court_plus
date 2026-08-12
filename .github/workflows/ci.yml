@@ -60,8 +60,13 @@ jobs:
         with:
           channel: stable
           flutter-version: 3.38.4
-      - run: cp .env.example .env
       - run: flutter pub get
+      - name: Write real build config
+        run: |
+          cp .env.example .env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}" >> .env
+          echo "APP_ENV=production" >> .env
       - run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
         with:
