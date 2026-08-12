@@ -101,7 +101,7 @@ jobs:
   # failures must never fail CI.
   report:
     name: Report to Ops Dashboard
-    needs: build_android
+    needs: [analyze, test, build_android]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -116,7 +116,7 @@ jobs:
             // isn't finalized until AFTER this job finishes (circular). Derive
             // the true result from the upstream jobs instead — their results
             // are all finalized before report runs.
-            const results = ['analyze', 'tests', 'build_android'].map((n) => needs[n].result);
+            const results = ['analyze', 'test', 'build_android'].map((n) => needs[n].result);
             const status = results.includes('failure')
               ? 'failure'
               : results.includes('cancelled')
