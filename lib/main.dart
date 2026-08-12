@@ -11,6 +11,7 @@ import 'core/di.dart';
 import 'services/supabase_service.dart';
 import 'services/deep_link_service.dart';
 import 'services/payment_service.dart';
+import 'services/event_tracker.dart';
 import 'presentation/providers/service_providers.dart';
 import 'l10n/app_strings.dart';
 
@@ -25,7 +26,9 @@ void main() async {
   );
 
   await AppConfig.init();
-    AppLogger.init();
+  AppLogger.init();
+  EventTracker.instance.attach();
+
   await setupDependencyInjection();
   await SupabaseService().init();
   await PaymentService().init();

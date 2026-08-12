@@ -18,6 +18,7 @@ import {
   YAxis,
 } from 'recharts'
 import { StatusPill, StatCard } from '../components/ui'
+import ActivityFeed from '../components/ActivityFeed'
 import { api } from '../lib/api'
 import { useAsync } from '../lib/hooks'
 import type { LogEntry } from '../lib/types'
@@ -69,6 +70,8 @@ export default function Overview() {
           tint="bg-red-50 text-red-600"
         />
       </div>
+
+      <ActivityFeed />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Traffic chart */}

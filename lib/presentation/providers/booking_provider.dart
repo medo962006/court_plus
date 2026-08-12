@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/models.dart';
 import '../../services/supabase_service.dart';
+import '../../services/event_tracker.dart';
 import 'supabase_provider.dart';
 
 // ─── State ───
@@ -143,6 +144,16 @@ final class BookingNotifier extends StateNotifier<BookingState> {
             isLoading: false,
             totalAmount: amount,
             bookingId: bookingId,
+          );
+          EventTracker.instance.track(
+            'booking_created',
+            props: {
+              'court': court.name,
+              'courtId': court.id,
+              'date': date.toIso8601String().split('T')[0],
+              'timeSlot': timeSlot,
+              'amount': amount,
+            },
           );
           return null; // ← null = success
         },

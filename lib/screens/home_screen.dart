@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../routes.dart';
 import '../l10n/app_strings.dart';
+import '../services/event_tracker.dart';
 import 'package:iconify_flutter/iconify_flutter.dart';
 import 'package:iconify_flutter/icons/ph.dart';
 
@@ -34,6 +35,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       'Basketball' => 'basketball',
       _ => label,
     };
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    EventTracker.instance.track('screen_open', props: {'screen': 'home'});
   }
 
     @override

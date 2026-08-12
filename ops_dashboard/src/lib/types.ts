@@ -118,3 +118,16 @@ export interface SystemOverview {
   lastDeploy: { version: string; at: string } | null
   errorsLast24h: number
 }
+
+/** A granular interaction event from a court+ app instance (migration 00011). */
+export interface AppEvent {
+  id: string
+  appId: string
+  event: string
+  props: Record<string, unknown>
+  userId?: string | null
+  platform?: string | null
+  appVersion?: string | null
+  appEnv?: string | null
+  createdAt: string
+}

@@ -10,6 +10,7 @@ import {
   stubServices,
 } from './stubs'
 import type {
+  AppEvent,
   Coach,
   Court,
   LogEntry,
@@ -259,5 +260,26 @@ export const api = {
     if (error) throw new Error(error.message)
     await audit('update', 'coaches', id, { ...patch, id })
     return data as Coach
+  },
+
+  async events(limit = 40): Promise<AppEvent[]> {
+    if (!supabase) return flake([])
+    const { data, error } = await supabase
+      .from('app_events')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return flake([])
+    return (data as Array<Record<string, unknown>>).map((r) => ({
+      id: String(r.id),
+      appId: String(r.app_id ?? 'court+'),
+      event: String(r.event),
+      props: (r.props as Record<string, unknown>) ?? {},
+      userId: (r.user_id as string) ?? null,
+      platform: (r.platform as string) ?? null,
+      appVersion: (r.app_version as string) ?? null,
+      appEnv: (r.app_env as string) ?? null,
+      createdAt: String(r.created_at),
+    }))
   },
 }

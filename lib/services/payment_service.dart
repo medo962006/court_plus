@@ -5,6 +5,7 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import '../core/config.dart';
 import '../core/logger.dart';
 import '../core/result.dart';
+import 'event_tracker.dart';
 
 /// Payment service wrapping Stripe Payment Intents via Supabase Edge Functions.
 final class PaymentService {
@@ -69,6 +70,7 @@ final class PaymentService {
     required String bookingId,
     required double amount,
   }) async {
+    EventTracker.instance.track('payment_started', props: {'amount': amount});
     try {
       // 1. Create payment intent
       final piResult = await createPaymentIntent(
@@ -98,6 +100,7 @@ final class PaymentService {
           await Stripe.instance.presentPaymentSheet();
 
           AppLogger.info('Payment succeeded for booking $bookingId');
+          EventTracker.instance.track('payment_succeeded', props: {'amount': amount});
           return Result.success({'booking_id': bookingId, 'status': 'completed'});
         },
         (e) => Result.failure(e),
@@ -105,11 +108,13 @@ final class PaymentService {
     } catch (e, s) {
       if (e is StripeException) {
         AppLogger.error('Stripe payment failed', error: e.error);
+        EventTracker.instance.track('payment_failed', props: {'amount': amount});
         return Result.failure(
           ServerException(e.error.localizedMessage ?? 'Payment cancelled'),
         );
       }
       AppLogger.error('Payment failed', error: e, stack: s);
+      EventTracker.instance.track('payment_failed', props: {'amount': amount});
       return Result.failure(ServerException('Payment failed: $e'));
     }
   }
