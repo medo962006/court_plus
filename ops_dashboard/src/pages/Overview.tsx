@@ -21,15 +21,20 @@ import { StatusPill, StatCard } from '../components/ui'
 import ActivityFeed from '../components/ActivityFeed'
 import { api } from '../lib/api'
 import { usePolling } from '../lib/hooks'
-import type { LogEntry } from '../lib/types'
+import { useDark } from '../lib/theme'
 
 const POLL = 4000
 
 export default function Overview() {
+  const [dark] = useDark()
   const overview = usePolling(() => api.systemOverview(), [], POLL)
   const services = usePolling(() => api.services(), [], POLL)
   const metrics = usePolling(() => api.metrics(), [], POLL)
-  const logs = usePolling(() => api.logs(8), [], POLL)
+  const errors = usePolling(() => api.errors(5), [], POLL)
+
+  const grid = dark ? '#1e2a44' : '#e2e8f0'
+  const tick = dark ? '#8ea0bb' : '#64748b'
+  const tooltip = dark ? { backgroundColor: '#111a2e', border: '1px solid #1e2a44' } : { backgroundColor: '#fff', border: '1px solid #e2e8f0' }
 
   return (
     <div className="space-y-6">
@@ -53,7 +58,7 @@ export default function Overview() {
           label="Bookings today"
           value={overview.data?.bookingsToday ?? '–'}
           icon={CalendarCheck}
-          tint="bg-sky-50 text-sky-700"
+          tint="bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300"
         />
       </div>
 
@@ -64,12 +69,12 @@ export default function Overview() {
           value={`${overview.data?.successRatePct ?? '–'}%`}
           icon={TrendUp}
         />
-        <StatCard label="P95 latency" value={`${overview.data?.p95LatencyMs ?? '–'} ms`} icon={Gauge} tint="bg-purple-50 text-purple-700" />
+        <StatCard label="P95 latency" value={`${overview.data?.p95LatencyMs ?? '–'} ms`} icon={Gauge} tint="bg-purple-50 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300" />
         <StatCard
           label="Errors (24h)"
           value={overview.data?.errorsLast24h ?? '–'}
           icon={Warning}
-          tint="bg-red-50 text-red-600"
+          tint="bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300"
         />
       </div>
 
@@ -90,11 +95,11 @@ export default function Overview() {
                   <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={grid} vertical={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: tick }} axisLine={false} tickLine={false} minTickGap={32} />
+              <YAxis tick={{ fontSize: 11, fill: tick }} axisLine={false} tickLine={false} />
               <Tooltip
-                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12 }}
+                contentStyle={{ borderRadius: 10, fontSize: 12, ...tooltip }}
               />
               <Area type="monotone" dataKey="requests" stroke="#10b981" strokeWidth={2} fill="url(#req)" name="Requests" />
               <Area type="monotone" dataKey="errors" stroke="#ef4444" strokeWidth={2} fill="none" name="Errors" />
@@ -140,11 +145,8 @@ export default function Overview() {
             </tr>
           </thead>
           <tbody>
-            {(logs.data ?? [])
-              .filter((l: LogEntry) => l.level === 'error' || l.level === 'warn')
-              .slice(0, 5)
-              .map((l) => (
-                <tr key={l.id} className="border-b border-line/60 last:border-0 hover:bg-slate-50">
+            {(errors.data ?? []).map((l) => (
+                <tr key={l.id} className="border-b border-line/60 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <td className="td">
                     <StatusPill status={l.level} />
                   </td>
@@ -155,7 +157,7 @@ export default function Overview() {
                   </td>
                 </tr>
               ))}
-            {!(logs.data ?? []).some((l) => l.level === 'error' || l.level === 'warn') && (
+            {(errors.data ?? []).length === 0 && (
               <tr>
                 <td className="td" colSpan={4}>
                   <span className="text-muted">No errors — all green.</span>

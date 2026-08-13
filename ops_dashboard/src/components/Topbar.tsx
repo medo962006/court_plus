@@ -1,5 +1,6 @@
 import {
   Bell,
+  Flask,
   Moon,
   Rocket,
   SignOut,
@@ -12,6 +13,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { hasSupabase } from '../lib/supabase'
 import { api } from '../lib/api'
+import { useDark } from '../lib/theme'
 import type { LogEntry } from '../lib/types'
 
 const SIM_TICK_MS = 4000
@@ -24,7 +26,7 @@ function LevelDot({ level }: { level: string }) {
 export default function Topbar({ title }: { title: string }) {
   const { profile, isAdmin, signOut } = useAuth()
 
-  const [dark, setDark] = useState(() => localStorage.getItem('ops-dark') === '1')
+  const [dark, setDark] = useDark()
   const [simOn, setSimOn] = useState(false)
   const [simBusy, setSimBusy] = useState(false)
   const [simNote, setSimNote] = useState<string | null>(null)
@@ -33,11 +35,7 @@ export default function Topbar({ title }: { title: string }) {
   const [alerts, setAlerts] = useState<LogEntry[]>([])
   const tickRef = useRef<number | null>(null)
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark)
-    localStorage.setItem('ops-dark', dark ? '1' : '0')
-  }, [dark])
-
+  // Notifications: poll recent warn/error logs.
   useEffect(() => {
     const load = async () => {
       const logs = await api.logs(40)
@@ -90,6 +88,12 @@ export default function Topbar({ title }: { title: string }) {
           <span className={`h-1.5 w-1.5 rounded-full ${hasSupabase ? 'bg-brand-500' : 'bg-amber-500'}`} />
           {hasSupabase ? 'Live' : 'Stub data'}
         </span>
+
+        {simOn && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-500/20 dark:bg-amber-500/15 dark:text-amber-300">
+            <Flask size={12} weight="bold" /> Demo · simulated
+          </span>
+        )}
 
         {simNote && (
           <span className="rounded-md bg-brand-50 px-2 py-1 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-500/20">

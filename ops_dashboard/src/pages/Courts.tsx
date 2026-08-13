@@ -95,11 +95,11 @@ export default function Courts() {
             <Plus size={16} weight="bold" /> Add court
           </button>
         ) : (
-          <span className="text-xs font-semibold text-amber-700">Read-only · admin rights required</span>
+          <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">Read-only · admin rights required</span>
         )}
       </div>
       {!isAdmin && (
-        <div className="rounded-lg bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-800">
+        <div className="rounded-lg bg-amber-50 px-4 py-2.5 text-xs font-medium dark:bg-amber-500/15 text-amber-800 dark:text-amber-200">
           You're signed in as a non-admin — court changes are reserved for admins.
         </div>
       )}
@@ -119,7 +119,7 @@ export default function Courts() {
           </thead>
           <tbody>
             {list.map((c) => (
-              <tr key={c.id} className="border-b border-line/60 last:border-0 hover:bg-slate-50">
+              <tr key={c.id} className="border-b border-line/60 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <td className="td">
                   <div className="font-semibold text-ink">{c.name}</div>
                   <div className="text-xs text-muted">{c.center}</div>
@@ -205,7 +205,7 @@ export default function Courts() {
         </div>
         <div className="mt-5 flex flex-col gap-2">
           {saveError && (
-            <div className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+            <div className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:bg-red-500/15 dark:text-red-300">
               {saveError}
             </div>
           )}

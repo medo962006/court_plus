@@ -6,10 +6,28 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-ops-bootstrap-secret',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 const TEST_EMAIL = 'testuser@courtplus.com'
 const TEST_PASSWORD = 'TestPassword123!'
 
-serve(async (_req) => {
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+
+  // Release hardening: creating auth users is privileged — require the shared
+  // bootstrap secret header. 401 unless it matches.
+  const secret = Deno.env.get('BOOTSTRAP_SECRET')
+  if (secret && req.headers.get('x-ops-bootstrap-secret') !== secret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    })
+  }
+
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -31,6 +49,6 @@ serve(async (_req) => {
       created: !error,
       message: error ? 'User already exists' : 'User created',
     }),
-    { headers: { 'Content-Type': 'application/json' } }
+    { headers: { 'Content-Type': 'application/json', ...cors } }
   )
 })

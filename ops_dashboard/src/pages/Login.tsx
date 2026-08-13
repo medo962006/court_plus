@@ -116,6 +116,9 @@ export default function Login() {
             <SignOut size={16} /> Sign out
           </button>
         )}
+        <div className="mt-5 border-t border-line pt-3 text-center text-[11px] text-muted">
+          Court+ Ops Dashboard · v1.0 · Protected admin area
+        </div>
       </div>
     </div>
   )

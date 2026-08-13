@@ -77,7 +77,7 @@ export default function ActivityFeed() {
         {top.map(([ev, n]) => (
           <span
             key={ev}
-            className="inline-flex items-center gap-1.5 rounded-full border border-line bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-ink"
+            className="inline-flex items-center gap-1.5 rounded-full border border-line bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-ink dark:bg-slate-800/60"
           >
             <span className={`h-1.5 w-1.5 rounded-full ${tone(ev)}`} />
             {pretty(ev)}
@@ -101,7 +101,7 @@ export default function ActivityFeed() {
                 <div className="flex items-center gap-2">
                   <span className="truncate text-[13px] font-medium text-ink">{pretty(e.event)}</span>
                   {e.platform && (
-                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted">
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted dark:bg-slate-800 dark:text-slate-300">
                       {e.platform}
                     </span>
                   )}

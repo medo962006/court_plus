@@ -25,6 +25,21 @@ import type {
 const flake = <T>(data: T, ms = 300): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(data), ms))
 
+/** Map raw system_logs rows to the typed LogEntry shape. */
+function mapLogs(data: unknown): LogEntry[] {
+  return (data as Array<Record<string, unknown>>).map((r) => ({
+    id: String(r.id),
+    level: r.level as LogEntry['level'],
+    service: String(r.service),
+    message: String(r.message),
+    context: (r.context as Record<string, unknown>) ?? undefined,
+    userId: (r.user_id as string) ?? null,
+    appVersion: (r.app_version as string) ?? null,
+    appEnv: (r.app_env as string) ?? null,
+    createdAt: String(r.created_at),
+  }))
+}
+
 /** Best-effort admin audit trail. Non-fatal. */
 async function audit(
   action: string,
@@ -110,17 +125,20 @@ export const api = {
       .order('created_at', { ascending: false })
       .limit(limit)
     if (error) return flake(stubLogs)
-    return (data as Array<Record<string, unknown>>).map((r) => ({
-      id: String(r.id),
-      level: r.level as LogEntry['level'],
-      service: String(r.service),
-      message: String(r.message),
-      context: (r.context as Record<string, unknown>) ?? undefined,
-      userId: (r.user_id as string) ?? null,
-      appVersion: (r.app_version as string) ?? null,
-      appEnv: (r.app_env as string) ?? null,
-      createdAt: String(r.created_at),
-    }))
+    return mapLogs(data)
+  },
+
+  /** Recent warn/error log entries — used by the Overview "Recent errors" table. */
+  async errors(limit = 6): Promise<LogEntry[]> {
+    if (!supabase) return flake(stubLogs.filter((l) => l.level === 'error' || l.level === 'warn').slice(0, limit))
+    const { data, error } = await supabase
+      .from('system_logs')
+      .select('*')
+      .in('level', ['error', 'warn'])
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) return flake([])
+    return mapLogs(data)
   },
 
   async pipelineRuns(): Promise<PipelineRun[]> {

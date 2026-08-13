@@ -24,6 +24,17 @@ const ADMIN_NAME = Deno.env.get('QUICK_ADMIN_NAME') ?? 'Ops Admin'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+
+  // Release hardening: this escalates privileges (creates/promotes an admin),
+  // so require a shared bootstrap secret header. 401 unless it matches.
+  const secret = Deno.env.get('BOOTSTRAP_SECRET')
+  if (secret && req.headers.get('x-ops-bootstrap-secret') !== secret) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+    })
+  }
+
   if (!ADMIN_PASSWORD) {
     return new Response(JSON.stringify({ error: 'QUICK_ADMIN_PASSWORD not set' }), {
       status: 500,

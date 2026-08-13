@@ -2,7 +2,7 @@ import { CaretDown, GitBranch, GitCommit, GitPullRequest, RocketLaunch, UserCirc
 import { useState } from 'react'
 import { Badge, StatusPill } from '../components/ui'
 import { api } from '../lib/api'
-import { useAsync } from '../lib/hooks'
+import { useAsync, usePolling } from '../lib/hooks'
 import type { PipelineRun } from '../lib/types'
 
 const eventIcon = (e: PipelineRun['event']) => {
@@ -19,7 +19,7 @@ const eventIcon = (e: PipelineRun['event']) => {
 }
 
 export default function Pipelines() {
-  const runs = useAsync(() => api.pipelineRuns())
+  const runs = usePolling(() => api.pipelineRuns(), [], 8000)
   const [openRun, setOpenRun] = useState<string | null>(null)
   const jobs = useAsync(() => api.pipelineJobs(openRun ?? ''), [openRun])
 
@@ -42,7 +42,7 @@ export default function Pipelines() {
           return (
             <div key={run.id} className="card overflow-hidden">
               <button
-                className="flex w-full items-center gap-4 px-5 py-3.5 text-left hover:bg-slate-50"
+                className="flex w-full items-center gap-4 px-5 py-3.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
                 onClick={() => setOpenRun(isOpen ? null : run.id)}
               >
                 <StatusPill status={run.status} />
@@ -59,10 +59,10 @@ export default function Pipelines() {
                 <span
                   className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
                     run.event === 'release'
-                      ? 'bg-brand-50 text-brand-700'
+                      ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
                       : run.event === 'pull_request'
-                        ? 'bg-sky-50 text-sky-700'
-                        : 'bg-slate-100 text-muted'
+                        ? 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300'
+                        : 'bg-slate-100 text-muted dark:bg-slate-800 dark:text-slate-300'
                   }`}
                 >
                   <EventIcon size={12} weight="bold" />
@@ -78,13 +78,13 @@ export default function Pipelines() {
               </button>
 
               {isOpen && (
-                <div className="border-t border-line bg-slate-50/60 px-6 py-4">
+                <div className="border-t border-line bg-slate-50/60 px-6 py-4 dark:bg-slate-800/40">
                   <div className="grid max-w-2xl grid-cols-1 gap-2 sm:grid-cols-2">
                     {jobsLoadingRow(jobs.loading)}
                     {(jobs.data ?? []).map((job) => (
                       <div
                         key={job.id}
-                        className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2"
+                        className="flex items-center justify-between rounded-lg border border-line bg-white px-3 py-2 dark:bg-panel"
                       >
                         <div>
                           <div className="text-sm font-medium text-ink">{job.name}</div>

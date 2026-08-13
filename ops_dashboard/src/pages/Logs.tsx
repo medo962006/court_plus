@@ -2,13 +2,13 @@ import { FunnelSimple, MagnifyingGlass, Stack } from '@phosphor-icons/react'
 import { useMemo, useState } from 'react'
 import { StatusPill } from '../components/ui'
 import { api } from '../lib/api'
-import { useAsync } from '../lib/hooks'
+import { usePolling } from '../lib/hooks'
 import type { LogLevel } from '../lib/types'
 
 const levels: Array<LogLevel | 'all'> = ['all', 'error', 'warn', 'info', 'debug']
 
 export default function Logs() {
-  const logs = useAsync(() => api.logs(300))
+  const logs = usePolling(() => api.logs(300), [], 8000)
   const [filter, setFilter] = useState<LogLevel | 'all'>('all')
   const [q, setQ] = useState('')
 
@@ -41,14 +41,14 @@ export default function Logs() {
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-line bg-white p-0.5">
+        <div className="flex items-center gap-1 rounded-lg border border-line bg-white p-0.5 dark:bg-panel">
           <FunnelSimple size={15} className="ml-2 text-muted" />
           {levels.map((lv) => (
             <button
               key={lv}
               onClick={() => setFilter(lv)}
               className={`rounded-md px-2.5 py-1.5 text-xs font-semibold capitalize transition-colors ${
-                filter === lv ? 'bg-brand-600 text-white' : 'text-muted hover:bg-slate-100'
+                filter === lv ? 'bg-brand-600 text-white' : 'text-muted hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               {lv}
@@ -75,7 +75,7 @@ export default function Logs() {
             </thead>
             <tbody>
               {rows.map((l) => (
-                <tr key={l.id} className="border-b border-line/60 last:border-0 hover:bg-slate-50">
+                <tr key={l.id} className="border-b border-line/60 last:border-0 hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <td className="td">
                     <StatusPill status={l.level} />
                   </td>

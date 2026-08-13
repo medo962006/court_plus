@@ -18,7 +18,7 @@ export default function Modal({
       <div className="w-full max-w-lg overflow-hidden rounded-xl border border-line bg-panel shadow-xl">
         <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
           <h2 className="text-sm font-bold text-ink">{title}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-slate-100">
+          <button onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-slate-100 dark:hover:bg-slate-800">
             <X size={18} />
           </button>
         </div>
