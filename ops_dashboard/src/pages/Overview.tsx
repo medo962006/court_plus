@@ -20,14 +20,16 @@ import {
 import { StatusPill, StatCard } from '../components/ui'
 import ActivityFeed from '../components/ActivityFeed'
 import { api } from '../lib/api'
-import { useAsync } from '../lib/hooks'
+import { usePolling } from '../lib/hooks'
 import type { LogEntry } from '../lib/types'
 
+const POLL = 4000
+
 export default function Overview() {
-  const overview = useAsync(() => api.systemOverview(), [])
-  const services = useAsync(() => api.services(), [])
-  const metrics = useAsync(() => api.metrics(), [])
-  const logs = useAsync(() => api.logs(8), [])
+  const overview = usePolling(() => api.systemOverview(), [], POLL)
+  const services = usePolling(() => api.services(), [], POLL)
+  const metrics = usePolling(() => api.metrics(), [], POLL)
+  const logs = usePolling(() => api.logs(8), [], POLL)
 
   return (
     <div className="space-y-6">

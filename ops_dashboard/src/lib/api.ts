@@ -283,12 +283,13 @@ export const api = {
     }))
   },
 
-  /** Generate realistic activity for ~N users (auth-gated edge function). */
-  async simulateUsage(users = 10000): Promise<{
+  /** Auth-gated edge function: start = 24h backfill, tick = live stream, stop = purge sim rows. */
+  async simulate(mode: 'start' | 'tick' | 'stop'): Promise<{
     ok: boolean
-    users?: number
-    activeSessions?: number
+    mode?: string
+    activeUsers?: number
     events?: number
+    deleted?: Record<string, number>
     error?: string
   }> {
     if (!supabase) return { ok: false, error: 'Supabase not configured' }
@@ -303,24 +304,26 @@ export const api = {
           apikey: supabaseAnonKey,
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ users }),
+        body: JSON.stringify({ mode }),
       })
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : 'network error' }
     }
     const data = (await res.json().catch(() => null)) as {
       ok?: boolean
-      users?: number
-      activeSessions?: number
+      mode?: string
+      activeUsers?: number
       events?: number
+      deleted?: Record<string, number>
       error?: string
     } | null
     if (!res.ok) return { ok: false, error: data?.error ?? `HTTP ${res.status}` }
     return (data ?? { ok: false, error: 'No response' }) as {
       ok: boolean
-      users?: number
-      activeSessions?: number
+      mode?: string
+      activeUsers?: number
       events?: number
+      deleted?: Record<string, number>
       error?: string
     }
   },
