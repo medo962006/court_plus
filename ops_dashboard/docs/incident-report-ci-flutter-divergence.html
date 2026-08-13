@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Court+ — Incident Report: Flutter SDK Version Divergence</title>
+<style>
+  @page { size: A4; margin: 12mm 13mm; }
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f3f4f6; color: #374151; margin: 0; padding: 0;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sheet {
+    max-width: 820px; margin: 24px auto; background: #fff;
+    border: 1px solid #e5e7eb; border-radius: 16px; padding: 40px 44px;
+    box-shadow: 0 1px 3px rgba(16,24,40,.06);
+  }
+  code, .mono {
+    font-family: 'SFMono-Regular', ui-monospace, 'Fira Code', Menlo, Consolas, monospace;
+    font-size: .88em; color: #374151;
+  }
+  .page-break { page-break-before: always; }
+  .avoid { break-inside: avoid; page-break-inside: avoid; }
+  @media print {
+    html, body { background: #fff; }
+    .sheet { max-width: 100%; margin: 0; border: none; border-radius: 0; box-shadow: none; padding: 0; }
+    .cover, .page-break { page-break-before: always; }
+    .cover.page-break { page-break-before: avoid; }
+    h1, h2, h3, h4, .section-title, .sub-title { page-break-after: avoid; }
+    tr, .card, .callout, .step, .node, .debt-item, .diagram { break-inside: avoid; page-break-inside: avoid; }
+    thead { display: table-header-group; }
+  }
+
+  /* ===== Hero / cover ===== */
+  .hero { background: #0f1115; color: #fff; border-radius: 16px 16px 0 0; padding: 40px 40px 32px; }
+  .hero .tag { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #f59e0b; font-weight: 700; margin: 0 0 8px; }
+  .hero h1 { margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -.02em; color: #fff; line-height: 1.15; }
+  .hero .sub { margin: 8px 0 0; font-size: 15.5px; color: #9ca3af; font-weight: 400; }
+  .meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 30px; margin-top: 30px; }
+  .meta .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; font-weight: 700; }
+  .meta .val { font-size: 13.5px; color: #f9fafb; font-weight: 600; margin-top: 3px; line-height: 1.35; }
+  .hero .divider { height: 1px; background: #262a33; margin: 28px 0 20px; }
+  .hero .summary { font-size: 13.5px; color: #d1d5db; line-height: 1.6; margin: 0; }
+
+  /* ===== Section headers ===== */
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 0 0 6px; }
+  .num { display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px;
+    background: #f3f4f6; color: #4b5563; border-radius: 7px; font-weight: 800; font-size: 14px; padding: 0 6px; }
+  .section-title { font-size: 21px; font-weight: 800; color: #111827; margin: 0; letter-spacing: -.01em; }
+  .section-sub { color: #6b7280; font-size: 13.5px; margin: 4px 0 22px; line-height: 1.55; }
+  .sub-title { font-size: 15.5px; font-weight: 700; color: #374151; margin: 22px 0 10px; }
+  p { font-size: 13.5px; line-height: 1.6; color: #4b5563; }
+  b { color: #1f2937; }
+
+  /* ===== Badges ===== */
+  .pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 9999px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+  .b-red { background: #fee2e2; color: #dc2626; }
+  .b-amber { background: #fef3c7; color: #d97706; }
+  .b-green { background: #d1fae5; color: #059669; }
+  .b-blue { background: #dbeafe; color: #2563eb; }
+  .b-gray { background: #eef2f6; color: #475569; }
+
+  /* ===== Cards / grids ===== */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; margin-top: 4px; }
+  .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 16px 14px; }
+  .card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+  .card-title { font-size: 14px; font-weight: 700; color: #111827; margin: 0; }
+  .card p { font-size: 12.5px; margin: 0; color: #4b5563; line-height: 1.55; }
+  .card p + p { margin-top: 8px; }
+
+  /* ===== Diagram ===== */
+  .diagram { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 26px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .node { padding: 9px 18px; border-radius: 8px; border: 1px solid; font-weight: 600; text-align: center;
+    font-size: 12.5px; min-width: 150px; }
+  .node small { display: block; font-weight: 500; font-size: 11px; opacity: .85; margin-top: 1px; }
+  .n-green { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+  .n-red   { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+  .n-amber { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+  .n-gray  { background: #f3f4f6; color: #374151; border-color: #e5e7eb; }
+  .n-blue  { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+  .n-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .n-arrow { color: #9ca3af; font-weight: 700; font-size: 15px; line-height: 1; }
+
+  /* ===== Table ===== */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead th { text-align: left; text-transform: uppercase; font-size: 11px; letter-spacing: .05em;
+    color: #6b7280; font-weight: 700; padding: 9px 10px; border-bottom: 1px solid #d1d5da; }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid #eef0f3; color: #374151; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  .cell-mono { font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #374151; }
+  td .mono { font-size: 12px; color: #111827; font-weight: 600; }
+
+  /* ===== Callouts / steps ===== */
+  .callout { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .callout-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .callout-head .num { min-width: 22px; height: 22px; font-size: 12px; }
+  .callout-head b { font-size: 14px; }
+  .callout p { font-size: 12.5px; margin: 0; }
+
+  .footer { margin-top: 28px; border-top: 1px solid #e5e7eb; padding-top: 14px;
+    text-align: center; font-size: 11.5px; color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+<div class="sheet cover">
+  <div class="hero">
+    <p class="tag">Incident Report · Post-mortem</p>
+    <h1>CI/CD hangs on tests — Flutter SDK Version Divergence</h1>
+    <p class="sub">Technical solution of a one-day delay caused by a toolchain the team couldn't reproduce locally</p>
+
+    <div class="meta">
+      <div><div class="lbl">Severity</div><div class="val">High — blocked CI green</div></div>
+      <div><div class="lbl">Delay</div><div class="val">~1 development day</div></div>
+      <div><div class="lbl">Area</div><div class="val">CI/CD · Flutter testing</div></div>
+      <div><div class="lbl">Environment</div><div class="val">GitHub Actions (Linux)</div></div>
+      <div><div class="lbl">Status</div><div class="val">Resolved · Prevention in place</div></div>
+      <div><div class="lbl">Toolchain</div><div class="val">Flutter pinned to 3.38.4</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <p class="summary">A fully green local Flutter suite kept failing — and hanging — on CI, even though no application code had changed. The root cause was a Flutter SDK version divergence between local development (3.38.4) and CI (latest stable), which changed how the test framework treated a pre-existing layout overflow. This document explains the symptom, the root cause, the investigation, the fix, and the prevention.</p>
+  </div>
+
+  <!-- ===== Section 1 ===== -->
+  <div style="height:6px;"></div>
+  <div class="section-head" style="margin-top:34px;">
+    <span class="num">1</span><h2 class="section-title">Executive Summary</h2>
+  </div>
+  <p>The Court+ Flutter test suite of <b>123 tests</b> passed locally in ~4 seconds with <code>dart analyze lib test</code> fully clean. Yet the same commit repeatedly <b>hung and timed out on CI</b>, killing the Tests job at its 25-minute limit. Because the failure could not be reproduced locally, it initially looked like intermittent CI flakiness — but it was deterministic and version-specific.</p>
+  <p><b>Impact:</b> three-plus push→run→fix cycles, two hung runs with 10-minute <code>TimeoutException</code>s, plus a false lead on the reporting job — together ≈ <b>one working day</b> spent on a defect that was <b>not in the application logic</b>.</p>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">!</span><b>Key finding</b></div>
+    <p>“Works on my machine” was inverted: the code was fine, but the <b>toolchain differed</b> between local and CI, so a cosmetic layout overflow — silently tolerated by local Flutter — became a hard <code>FlutterError.onError</code> assertion on newer Flutter, which escalated into a test timeout.</p>
+  </div>
+</div>
+
+<!-- ===== Section 2 ===== -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">2</span><h2 class="section-title">Symptom</h2>
+  </div>
+  <p class="section-sub">What we observed, and why it was confusing.</p>
+
+  <div class="sub-title">Observed behaviour</div>
+  <div class="grid2">
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-green">Local</span><h3 class="card-title">Reproducible pass</h3></div>
+      <p><code>dart analyze lib test</code> → 0 errors. <code>flutter test</code> → <b>123 passed in ~4s</b>, every time, on every run.</p>
+    </div>
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-red">CI</span><h3 class="card-title">Deterministic hang</h3></div>
+      <p>Static Analysis job green, but Tests exceeded the 25-minute timeout and auto-killed. Same commit, same result — not a flake.</p>
+    </div>
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-amber">Signal</span><h3 class="card-title">A pipeline, not an assertion</h3></div>
+      <p><code>A test overrode FlutterError.onError but had unexpected additional errors</code> followed by <code>TimeoutException after 0:10:00: Test timed out after 10 minutes</code>.</p>
+    </div>
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-gray">Readiness</span><h3 class="card-title">Blocking release</h3></div>
+      <p>Red pipeline blocked merges; the same code worked in production-grade local verification, making the delay feel entirely “process,” not “product.”</p>
+    </div>
+  </div>
+
+  <div class="sub-title">Run evidence</div>
+  <div class="avoid">
+  <table>
+    <thead><tr><th>Run</th><th>Static</th><th>Tests</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td class="cell-mono">31484304588</td><td>✓</td><td><span class="pill b-red">Timeout ~22m</span></td><td>Tests timed out (latest-stable Flutter)</td></tr>
+      <tr><td class="cell-mono">31598596480</td><td>✓</td><td><span class="pill b-red">Timeout 25m</span></td><td>Tests hung; timeout + <code>FlutterError.onError</code></td></tr>
+      <tr><td class="cell-mono">31601086011</td><td>✓</td><td><span class="pill b-green">1m36s</span></td><td>First green after pinning 3.38.4</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ===== Section 3 ===== -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">3</span><h2 class="section-title">Root Cause</h2>
+  </div>
+  <p class="section-sub">Two independent factors compounded into the failure.</p>
+
+  <div class="sub-title">Version divergence</div>
+  <div class="diagram avoid">
+    <div class="n-row">
+      <div class="node n-green">Local (dev)<small>Flutter 3.38.4 — pinned</small></div>
+      <div class="node n-amber">CI — latest <code>stable</code><small>3.44.9-class — unpinned</small></div>
+    </div>
+    <div class="n-arrow">↑ both run the same 123 tests ↓</div>
+    <div class="n-row">
+      <div class="node n-green">Overflow tolerated<small>cosmetic only</small></div>
+      <div class="node n-red">Overflow trips <code>FlutterError.onError</code><small>→ unexpected additional errors</small></div>
+    </div>
+    <div class="n-arrow">↓</div>
+    <div class="n-row">
+      <div class="node n-gray">123 / 123 pass ⚡ ~4s</div>
+      <div class="node n-red">Tests hang → <code>TimeoutException</code> → job killed at 25m</div>
+    </div>
+  </div>
+
+  <div class="sub-title">The failure chain</div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">1</span><b>Pre-existing overflow</b></div>
+    <p>A settings widget had a latent layout overflow that older Flutter reported as a non-fatal console warning — never a test failure.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">2</span><b>Toolchain change</b></div>
+    <p>Newer Flutter (3.44.9-class) tightened <code>flutter_test</code> error-tracking: the overflow now fired <code>FlutterError.onError</code> with <code>unexpected additional errors</code>, failing the test.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">3</span><b>Hang, not fail-fast</b></div>
+    <p>In that configuration the failure manifested as a 10-minute <code>TimeoutException</code> inside the test, so the job consumed the entire CI window instead of failing quickly — hiding the true cause.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">4</span><b>Why it cost a day</b></div>
+    <p>It was <b>impossible to reproduce locally</b> (local SDK 3.38.4 never failed), so each cycle required push → 10–25 min CI run → read logs → adapt. A separate reporting-job bug added a false lead.</p>
+  </div>
+</div>
+
+<!-- ===== Section 4 ===== -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">4</span><h2 class="section-title">Investigation &amp; Timeline</h2>
+  </div>
+  <p class="section-sub">How the team closed the loop from “flaky CI” to a version-pinning fix.</p>
+
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">1</span><b>Reproduce &amp; rule out the app</b></div>
+    <p>Confirmed <code>dart analyze</code> and <code>flutter test</code> are clean locally and that the failure is deterministic on CI — eliminating application logic as the cause.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">2</span><b>Read the CI logs, not the code</b></div>
+    <p>Extracted the real signal: <code>FlutterError.onError</code> “unexpected additional errors” + <code>TimeoutException</code>, then identified <code>Note: CI pins <code>flutter: latest</code> ≠ local 3.38.4</code>.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">3</span><b>False lead: the report job</b></div>
+    <p>Initially suspected the CI report job. Found a separate, real bug there — it polled its <code>conclusion</code>, which is only set after the run ends (circular), so green runs stored as <code>in_progress</code>. Fixed via <code>needs.*.result</code> through <code>env</code>.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">4</span><b>Pin the toolchain</b></div>
+    <p>Bumped all three CI jobs to <code>flutter-version: 3.38.4</code> to match local, and hardened widget tests to a small raster (<code>Size(400,800)</code> @ dpr 1.0) so they don’t trip the overflow on the Linux software renderer.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">5</span><b>First fully green pipeline</b></div>
+    <p><code>Analyze ✓ 1m30s · Tests ✓ 1m43s · APK ✓ 7m35s · Report ✓</code> — and equivalence with local verification restored.</p>
+  </div>
+</div>
+
+<!-- ===== Section 5 ===== -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">5</span><h2 class="section-title">Resolution &amp; Fix</h2>
+  </div>
+  <p class="section-sub">The change set that closed the incident.</p>
+
+  <div class="grid2">
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-blue">Pinning</span><h3 class="card-title">Explicit SDK version</h3></div>
+      <p>CI now installs <code>flutter-version: 3.38.4</code> in the analyze, test, and build jobs — identical toolchain to local, so “passes locally” means “passes on CI.” No more floating to <code>stable</code>.</p>
+    </div>
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-blue">Tests</span><h3 class="card-title">Robust widget tests</h3></div>
+      <p>Widget tests run against a small raster (<code>Size(400,800)</code> @ dpr 1.0) instead of a 2.5M-pixel frame, avoiding the Linux software-renderer overflow and keeping the suite fast.</p>
+    </div>
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-green">Report</span><h3 class="card-title">Real run status</h3></div>
+      <p>The report job now derives its result from upstream job results via <code>needs.*.result</code> passed through <code>env</code> — fixing the circular <code>conclusion</code> read and <code>github-script@v7</code> <code>needs</code>-global removal.</p>
+    </div>
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-green">Gate</span><h3 class="card-title">Green pipeline restored</h3></div>
+      <p>Diet of the incident: a fully green, fast (<b>~10 min</b>) CI/CD pipeline with <code>status="success"</code> persisted to the dashboard.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Section 6 ===== -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">6</span><h2 class="section-title">Prevention &amp; Lessons Learned</h2>
+  </div>
+  <p class="section-sub">Actions that stop this class of incident from recurring.</p>
+
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">1</span><b>Never float the toolchain</b></div>
+    <p>Pin the Flutter SDK (and by extension Node/Deno/Supabase CLI) with a specific version in CI, and keep local dev on the identical version. Record it in a machine-readable version file so the two can’t silently diverge.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">2</span><b>Make tests fail fast</b></div>
+    <p>Investigate and fix any <code>FlutterError.onError</code> that surfaces in the test harness; decide deliberately whether an overflow is a real defect or a tolerated cosmetic, rather than letting the toolchain decide for us.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">3</span><b>Read the failure, not the guess</b></div>
+    <p>A 10-minute <code>TimeoutException</code> was the symptom; the cause was earlier in the log. Extract the first anomalous assertion before forming a theory, to avoid chasing the reporting job first.</p>
+  </div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">4</span><b>Cache the outcome</b></div>
+    <p>Each resolution is anchored by a green run and a confirmed DB row, so “fixed” is evidence-based — a habit that removed most of this incident’s one-day cost.</p>
+  </div>
+
+  <div class="footer">Court+ — Incident Report · CI/CD Post-mortem · Flutter SDK Version Divergence · Resolved v1.0</div>
+</div>
+
+</body>
+</html>
