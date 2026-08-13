@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Court+ Ops Dashboard — Technical Specifications</title>
+<style>
+  /* ===================== PRINT / A4 ===================== */
+  @page { size: A4; margin: 12mm 13mm; }
+  html, body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f3f4f6; color: #374151; margin: 0; padding: 0;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .sheet {
+    max-width: 820px; margin: 24px auto; background: #fff;
+    border: 1px solid #e5e7eb; border-radius: 16px; padding: 40px 44px;
+    box-shadow: 0 1px 3px rgba(16,24,40,.06);
+  }
+  code, .mono {
+    font-family: 'SFMono-Regular', ui-monospace, 'Fira Code', Menlo, Consolas, monospace;
+    font-size: .88em; color: #374151;
+  }
+  .cover { margin: 0; }
+  .page-break { page-break-before: always; }
+  .avoid { break-inside: avoid; page-break-inside: avoid; }
+
+  @media print {
+    html, body { background: #fff; }
+    .sheet { max-width: 100%; margin: 0; border: none; border-radius: 0; box-shadow: none; padding: 0; }
+    .cover, .page-break { page-break-before: always; }
+    .cover.page-break { page-break-before: avoid; }
+    h1, h2, h3, h4, .section-title, .sub-title { page-break-after: avoid; }
+    tr, .card, .callout, .step, .node, .debt-item, .diagram { break-inside: avoid; page-break-inside: avoid; }
+    thead { display: table-header-group; }
+  }
+
+  /* ===================== HERO / COVER ===================== */
+  .hero {
+    background: #0f1115; color: #fff; border-radius: 16px 16px 0 0; padding: 40px 40px 32px;
+  }
+  .hero h1 { margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -.02em; color: #fff; }
+  .hero .sub { margin: 6px 0 0; font-size: 16px; color: #9ca3af; font-weight: 400; }
+  .meta {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 30px; margin-top: 30px;
+  }
+  .meta .lbl { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; font-weight: 700; }
+  .meta .val { font-size: 13.5px; color: #f9fafb; font-weight: 600; margin-top: 3px; line-height: 1.35; }
+  .hero .divider { height: 1px; background: #262a33; margin: 28px 0 20px; }
+  .hero .summary { font-size: 13.5px; color: #d1d5db; line-height: 1.6; margin: 0; }
+
+  /* ===================== SECTION HEADERS ===================== */
+  .section-head { display: flex; align-items: center; gap: 12px; margin: 0 0 6px; }
+  .num {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 26px;
+    background: #f3f4f6; color: #4b5563; border-radius: 7px; font-weight: 800; font-size: 14px; padding: 0 6px;
+  }
+  .section-title { font-size: 21px; font-weight: 800; color: #111827; margin: 0; letter-spacing: -.01em; }
+  .section-sub { color: #6b7280; font-size: 13.5px; margin: 4px 0 22px; line-height: 1.55; }
+  .sub-title { font-size: 15.5px; font-weight: 700; color: #374151; margin: 22px 0 10px; }
+
+  p { font-size: 13.5px; line-height: 1.6; color: #4b5563; }
+  b { color: #1f2937; }
+
+  /* ===================== BADGES ===================== */
+  .pill {
+    display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 9999px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap;
+  }
+  .b-blue   { background: #dbeafe; color: #2563eb; }
+  .b-green  { background: #d1fae5; color: #059669; }
+  .b-amber  { background: #fef3c7; color: #d97706; }
+  .b-gray   { background: #eef2f6; color: #475569; }
+  .b-purple { background: #f3e8ff; color: #7c3aed; }
+  .b-red    { background: #fee2e2; color: #dc2626; }
+
+  /* ===================== CARD GRIDS ===================== */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; margin-top: 4px; }
+  .gridwrap { border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; background: #fff; }
+  .card {
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px 16px 14px;
+  }
+  .card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+  .card-title { font-size: 14px; font-weight: 700; color: #111827; margin: 0; }
+  .card p { font-size: 12.5px; margin: 0; color: #4b5563; line-height: 1.55; }
+  .card p + p { margin-top: 8px; }
+
+  /* ===================== DIAGRAM ===================== */
+  .diagram {
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 26px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .node {
+    padding: 9px 20px; border-radius: 8px; border: 1px solid; font-weight: 600; text-align: center;
+    font-size: 13px; min-width: 158px; break-inside: avoid; page-break-inside: avoid;
+  }
+  .node small { display: block; font-weight: 500; font-size: 11px; opacity: .85; margin-top: 1px; }
+  .n-blue  { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+  .n-purple{ background: #f3e8ff; color: #7e22ce; border-color: #e9d5ff; }
+  .n-amber { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+  .n-pink  { background: #fce7f3; color: #be185d; border-color: #fbcfe8; }
+  .n-green { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+  .n-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .n-arrow { color: #9ca3af; font-weight: 700; font-size: 15px; line-height: 1; }
+
+  /* ===================== TABLES ===================== */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead th {
+    text-align: left; text-transform: uppercase; font-size: 11px; letter-spacing: .05em;
+    color: #6b7280; font-weight: 700; padding: 9px 10px; border-bottom: 1px solid #d1d5da;
+  }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid #eef0f3; color: #374151; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  td .mono, td code { font-size: 12px; color: #111827; font-weight: 600; }
+  .cell-mono { font-family: 'SFMono-Regular', ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #374151; }
+
+  /* ===================== CALLOUT / STEPS ===================== */
+  .callout {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-top: 12px;
+  }
+  .callout-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .callout-head .num { min-width: 22px; height: 22px; font-size: 12px; }
+  .callout-head b { font-size: 14px; }
+  .callout p { font-size: 12.5px; margin: 0; }
+
+  /* ===================== DEBT / ROADMAP ===================== */
+  .debt-list { margin-top: 6px; }
+  .debt-item { border-bottom: 1px solid #eef0f3; padding: 16px 0; }
+  .debt-item:last-child { border-bottom: none; }
+  .debt-line { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .debt-title { font-size: 15px; font-weight: 700; color: #111827; }
+  .debt p { margin: 6px 0 0; font-size: 12.5px; color: #4b5563; }
+  .debt .fix { margin: 8px 0 0 6px; padding-left: 14px; border-left: 2px solid #e5e7eb; font-size: 12.5px; color: #4b5563; }
+
+  .footer {
+    margin-top: 28px; border-top: 1px solid #e5e7eb; padding-top: 14px;
+    text-align: center; font-size: 11.5px; color: #9ca3af;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ COVER / PAGE 1 ============================ -->
+<div class="sheet cover">
+
+  <div class="hero">
+    <h1>Court+ Ops Dashboard</h1>
+    <p class="sub">Technical Specifications, Architecture &amp; System Design Document</p>
+
+    <div class="meta">
+      <div><div class="lbl">Platform</div><div class="val">Web — Static SPA</div></div>
+      <div><div class="lbl">Frontend</div><div class="val">React 18 · TypeScript · Tailwind v4</div></div>
+      <div><div class="lbl">Backend</div><div class="val">Supabase (PostgreSQL · RLS · Edge Functions)</div></div>
+      <div><div class="lbl">State</div><div class="val">React Hooks + Context (useAuth)</div></div>
+      <div><div class="lbl">Hosting</div><div class="val">GitHub Pages (public)</div></div>
+      <div><div class="lbl">Analyzer</div><div class="val">0 errors, 0 warnings</div></div>
+    </div>
+
+    <div class="divider"></div>
+    <p class="summary">Comprehensive technical overview of the Court+ operations dashboard — a real-time observability, CI/CD, and court/coach management console for the Court+ team. Covers the system architecture, frontend design system, backend telemetry pipeline, Edge Function inventory, quality gates, CI/CD, and the production-readiness roadmap.</p>
+  </div>
+</div><!-- end cover -->
+
+<!-- ============ SECTION 1 ============ -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">1</span><h2 class="section-title">System Architecture Overview</h2>
+  </div>
+  <p>The dashboard is a static single-page application with a <b>layered architecture</b>: a <b>React presentation layer</b> reads operational telemetry through a typed <b>API client</b>, which talks to <b>Supabase</b> over authenticated REST. All security-sensitive writes are routed through <b>Edge Functions</b> that use the service-­role key and are protected by shared-secret or JWT gates.</p>
+
+  <div class="sub-title">System Topology</div>
+  <div class="diagram avoid">
+    <div class="node n-blue" style="min-width:200px;">Browser (Chrome / Edge)<small>Static SPA · HashRouter</small></div>
+    <div class="n-arrow">↑↓ HTTPS</div>
+    <div class="node n-purple" style="min-width:200px;">GitHub Pages<small>Versioned static bundle</small></div>
+    <div class="n-arrow">↑↓</div>
+    <div class="n-row">
+      <div class="node n-purple">Supabase JS SDK<small>supabase-js</small></div>
+      <div class="node n-amber">Auth<small>gotrue · JWT</small></div>
+      <div class="node n-pink">REST + RLS<small>PostgREST</small></div>
+    </div>
+    <div class="n-arrow">↑↓</div>
+    <div class="n-row">
+      <div class="node n-green">PostgreSQL Database<small>Tables + RLS policies</small></div>
+      <div class="node n-green">Views<small>system_overview</small></div>
+      <div class="node n-green">Edge Functions<small>Deno · telemetry</small></div>
+    </div>
+  </div>
+  <p class="avoid" style="margin-top:14px;"><b>Data flow:</b> the dashboard reads telemetry, logs, events, and pipeline runs via authenticated REST (RLS restricts reads to signed-in admins). Live activity and events are written by the mobile app through <code>ingest-events</code>, CI posts results through <code>ci-report</code>, and the optional 10-­k demo drives <code>simulate-usage</code> — all Edge Functions running with the auto-injected service-­role key and explicit gates.</p>
+</div>
+
+<!-- ============ SECTION 2 ============ -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">2</span><h2 class="section-title">Frontend Specifications (React)</h2>
+  </div>
+  <p class="section-sub">The dashboard is a Vite + React 18 + TypeScript app styled with Tailwind CSS v4 and Recharts. Six routed pages, a shared design system, and a realtime data layer.</p>
+
+  <div class="grid2">
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-blue">Routing</span><h3 class="card-title">Hash-based navigation</h3></div>
+      <p>Uses <code>HashRouter</code> so deep links survive static hosting. Centralised route table with an auth guard: <code>#/login</code>, <code>#/overview</code>, <code>#/pipelines</code>, <code>#/logs</code>, <code>#/courts</code>, <code>#/coaches</code>. Unauthenticated users are redirected to <code>login</code>.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-purple">State</span><h3 class="card-title">Hooks + Context</h3></div>
+      <p>Auth state in a <code>useAuth</code> context (<code>session</code>, <code>profile</code>, <code>isAdmin</code>). Data fetching with <code>useAsync</code> + <code>usePolling</code> hooks, a typed <code>api</code> client, and a shared <code>useDark</code> theme hook kept in sync across components.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-green">Design System</span><h3 class="card-title">Theme &amp; components</h3></div>
+      <p>Emerald brand tokens via Tailwind <code>@theme</code>; light + custom dark theme (CSS-variable driven). Reusable primitives: <code>StatCard</code>, <code>StatusPill</code>, <code>Badge</code>, <code>Modal</code>, <code>ActivityFeed</code>, <code>Topbar</code>. Icons: <b>Phosphor</b>.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-blue">Realtime</span><h3 class="card-title">Live data layer</h3></div>
+      <p>Overview polls at <b>4s</b>, ActivityFeed at <b>5s</b>, Pipelines &amp; Logs at <b>8s</b>. The request-volume chart, service health, Recent-errors table, and notifications repaint live without a page reload.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-amber">Simulation</span><h3 class="card-title">10k-user demo toggle</h3></div>
+      <p>A top-bar toggle drives <code>simulate-usage</code>: <b>start</b> (24h backfill of ~28k events + live ticks), <b>tick</b> (ongoing stream), <b>stop</b> (purges every <code>sim=true</code> row). While on, an honest <b>“Demo · simulated”</b> badge is shown so the data is never mistaken for real users.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-purple">Auth</span><h3 class="card-title">Admin gating</h3></div>
+      <p>Email/password sign-in against Supabase Auth; writes on Courts/Coaches are gated by <code>profiles.role = 'admin'</code>. A quick-admin sign-in button exists only in local dev — the credentials are excluded from the public bundle.</p>
+    </div>
+  </div>
+
+  <div class="sub-title">Live flow (Overview)</div>
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">1</span><b>Poll operations data</b></div>
+    <p><code>usePolling(() =&gt; api.systemOverview(), [], 4000)</code> → aggregates <code>request_metrics</code>, <code>system_logs</code>, and <code>bookings</code> through the <code>system_overview</code> view, refreshing the KPI cards (Success Rate, P95 latency, Bookings today, Errors) and the live chart every 4 seconds.</p>
+  </div>
+</div>
+
+<!-- ============ SECTION 3 ============ -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">3</span><h2 class="section-title">Backend, Telemetry &amp; Data</h2>
+  </div>
+  <p class="section-sub">Supabase provides Postgres storage, Row-Level Security, auth, and serverless Edge Functions. A telemetry pipeline ingests app logs and events; aggregated views feed the live dashboard.</p>
+
+  <div class="sub-title">Auth &amp; Access Control</div>
+  <p>Built on <b>Supabase Auth (gotrue)</b>: email/password with persistent sessions and automatic token refresh. A <code>profiles</code> row tracks each user and carries the <code>role</code> column — <code>admin</code> unlocks management screens. Telemetry tables are <b>authenticated-select only</b>, so anonymous reads return empty and only signed-in admins can view live activity.</p>
+
+  <div class="sub-title">Core Database Schema</div>
+  <div class="avoid">
+  <table>
+    <thead><tr><th>Table</th><th>Key columns</th><th>Relationships</th><th>RLS</th></tr></thead>
+    <tbody>
+      <tr><td><span class="mono">profiles</span></td><td class="cell-mono">id, email, username, role</td><td class="cell-mono">id → auth.users</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">courts</span></td><td class="cell-mono">id, name, location, surface, price, is_active</td><td>—</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">coaches</span></td><td class="cell-mono">id, name, specialty, rating, is_active</td><td>—</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">bookings</span></td><td class="cell-mono">id, court_id, user_id, slot_id, status, total_price</td><td class="cell-mono">court_id, user_id, slot_id</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">system_logs</span></td><td class="cell-mono">id, level, service, message, context, user_id, app_version, sim</td><td>—</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">app_events</span></td><td class="cell-mono">id, event, props, device, platform, tenant, sim</td><td>—</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">request_metrics</span></td><td class="cell-mono">id, service, total, errors, p95_ms, period, sim</td><td>—</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">pipeline_runs</span></td><td class="cell-mono">id, status, workflow_name, run_number</td><td>—</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">admin_audit_log</span></td><td class="cell-mono">id, admin_id, action, target_table</td><td>—</td><td><span class="pill b-green">Enabled</span></td></tr>
+      <tr><td><span class="mono">system_overview</span> (view)</td><td class="cell-mono">success_rate, p95_latency_ms, bookings_today, errors_24h, requests_24h</td><td>aggregates metrics tables</td><td><span class="pill b-gray">View</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="sub-title">Telemetry Ingest Pipeline</div>
+  <p class="avoid">The Flutter app streams <code>RemoteLogger</code> batches to <code>ingest-logs</code>, and <code>EventTracker</code> batches user actions (<code>screen_open</code>, <code>court_viewed</code>, <code>search_used</code>, <code>booking_created</code>) to <code>ingest-events</code>. Writes use the service-­role key via Edge Functions; reads are admins-only. The live ActivityFeed and Logs pages surface this data within seconds.</p>
+
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">1</span><b>Event buffering</b></div>
+    <p><code>EventTracker.track(event, props)</code> buffers up to 50 events, then flushes in a batch POST to <code>/functions/v1/ingest-events</code> → <code>{"ok": true, "inserted": N}</code>. Silent no-op when not attached, so app tests are unaffected.</p>
+  </div>
+</div>
+
+<!-- ============ SECTION 4 ============ -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">4</span><h2 class="section-title">Edge Functions Inventory</h2>
+  </div>
+  <p class="section-sub">Deployed as Deno serverless functions (<code>--no-verify-jwt</code>), each using the auto-injected service-­role key with explicit authentication or shared-secret gates where they escalate privileges.</p>
+
+  <div class="avoid">
+  <table>
+    <thead><tr><th>Function</th><th>Purpose</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td><span class="mono">ingest-logs</span></td><td>App log ingestion (RemoteLogger batches)</td><td><span class="pill b-green">Live</span></td></tr>
+      <tr><td><span class="mono">ingest-events</span></td><td>App user-action event ingestion (EventTracker)</td><td><span class="pill b-green">Live</span></td></tr>
+      <tr><td><span class="mono">heartbeat</span></td><td>Service health signal for the Overview (+<code>request_metrics</code>)</td><td><span class="pill b-green">Live</span></td></tr>
+      <tr><td><span class="mono">ci-report</span></td><td>Persists GitHub Actions pipeline results to <code>pipeline_runs</code></td><td><span class="pill b-amber">Live · Secret</span></td></tr>
+      <tr><td><span class="mono">simulate-usage</span></td><td>Toggleable 10k-user demo (start / tick / stop + purge)</td><td><span class="pill b-blue">Live · Gated</span></td></tr>
+      <tr><td><span class="mono">create-admin</span></td><td>Idempotent admin bootstrap + self-healing password</td><td><span class="pill b-blue">Live · Gated</span></td></tr>
+      <tr><td><span class="mono">create-test-user</span></td><td>Test-user bootstrap for QA sign-in</td><td><span class="pill b-blue">Live · Gated</span></td></tr>
+      <tr><td><span class="mono">create-payment-intent</span></td><td>Stripe PaymentIntent creation</td><td><span class="pill b-red">WIP · Frozen</span></td></tr>
+      <tr><td><span class="mono">stripe-webhook</span></td><td>Stripe webhook handler for payment confirmation</td><td><span class="pill b-red">WIP · Frozen</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">1</span><b>Gating model</b></div>
+    <p><code>simulate-usage</code> requires a valid authenticated JWT (role <code>authenticated</code>, unexpired) and is CORS-enabled. <code>create-admin</code> / <code>create-test-user</code> require the shared <code>BOOTSTRAP_SECRET</code> header — without it they return <b>401</b>, so the released project cannot be used to mint admins or users. <code>ci-report</code> requires <code>CI_REPORT_SECRET</code>.</p>
+  </div>
+
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">2</span><b>Simulation lifecycle</b></div>
+    <p><b>Start:</b> <code>{ mode: 'start' }</code> — backfills ~28,000 realistic events across the past 24h tagged <code>sim=true</code>. <b>Tick:</b> live heartbeat + recent-window events every few seconds. <b>Stop:</b> <code>{ mode: 'stop' }</code> deletes every <code>sim=true</code> row, restoring only the authentic data.</p>
+  </div>
+</div>
+
+<!-- ============ SECTION 5 ============ -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">5</span><h2 class="section-title">Version Control, Quality &amp; CI/CD</h2>
+  </div>
+  <p class="section-sub">Monorepo containing both the Flutter client and the dashboard. Quality is enforced by static analysis with a fully green CI pipeline and a separate Pages deploy workflow.</p>
+
+  <div class="gridwrap grid2">
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-blue">Git</span><h3 class="card-title">Branching model</h3></div>
+      <p>Feature branches off <code>main</code>, reviewed via pull requests. <code>main</code> is the production branch and the source for both CI and the Pages deploy; no <code>develop</code>/<code>staging</code> branch yet.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-green">Analysis</span><h3 class="card-title">Static checks</h3></div>
+      <p><code>tsc --noEmit</code> → <b>0 errors</b> (dashboard). Flutter <code>dart analyze</code> → <b>0 errors, 0 warnings</b>, and <code>flutter test</code> → <b>123 passing in ~4s</b>.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-amber">Env</span><h3 class="card-title">Configuration</h3></div>
+      <p>Secrets live in a gitignored <code>.env</code> (<code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>) and in Supabase secrets (<code>CI_REPORT_SECRET</code>, <code>QUICK_ADMIN_*</code>, <code>BOOTSTRAP_SECRET</code>). The quick-admin password is deliberately excluded from the public bundle.</p>
+    </div>
+
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-gray">Pipeline</span><h3 class="card-title">GitHub Actions</h3></div>
+      <p><b>CI</b>: analyze + test + build (Flutter pinned to 3.38.4) and dashboard <code>typecheck</code>/<code>build</code>, then deploys Edge Functions and posts results back via <code>ci-report</code>. <b>Deploy Ops Dashboard</b>: builds and publishes the dashboard to GitHub Pages.</p>
+    </div>
+  </div>
+
+  <div class="callout avoid">
+    <div class="callout-head"><span class="num">1</span><b>Deployment</b></div>
+    <p>Every push to <code>main</code> triggers the CI pipeline (static → test → APK build → report). The dashboard workflow builds with only the public <code>VITE_*</code> repo secrets and publishes to <code>medo962006.github.io/court_plus</code> — verified live, HTTP 200, all runs green.</p>
+  </div>
+</div>
+
+<!-- ============ SECTION 6 ============ -->
+<div class="sheet page-break">
+  <div class="section-head">
+    <span class="num">6</span><h2 class="section-title">Security, Release Status &amp; Roadmap</h2>
+  </div>
+  <p class="section-sub">Release state and open items, ordered by business impact. Each item maps a current limitation to a concrete remediation.</p>
+
+  <div class="sub-title">Security posture</div>
+  <div class="grid2">
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-green">Auth</span><h3 class="card-title">Verified</h3></div>
+      <p>Admin sign-in verified live; anonymous telemetry reads blocked by RLS; quick-admin credentials verified <b>absent</b> from the production bundle (<code>isAdmin</code> gates management writes).</p>
+    </div>
+    <div class="card avoid">
+      <div class="card-head"><span class="pill b-green">Exposure</span><h3 class="card-title">Gated</h3></div>
+      <p>Privileged Edge Functions return <b>401</b> without their secret/JWT. Secrets are never committed; public payloads are minimal deploy-time <code>VITE_*</code> vars only.</p>
+    </div>
+  </div>
+
+  <div class="sub-title">Technical debt &amp; roadmap</div>
+  <div class="debt-list">
+    <div class="debt-item avoid">
+      <div class="debt-line"><span class="num" style="background:#f3f4f6;color:#111827;">CRITICAL</span><h3 class="debt-title">Payment integration (frozen / WIP)</h3></div>
+      <p><code>create-payment-intent</code> &amp; the Stripe webhook are deployed but unconfigured (no <code>STRIPE_SECRET_KEY</code>). Payment telemetry is intentionally hidden from the dashboard.</p>
+      <div class="fix"><b>Fix:</b> add Stripe keys, wire confirm/refund, then surface payment events. <b>Estimate:</b> 2–3 weeks.</div>
+    </div>
+
+    <div class="debt-item avoid">
+      <div class="debt-line"><span class="pill b-amber">High</span><h3 class="debt-title">Realtime instead of HTTP polling</h3></div>
+      <p>Live data is server-polled at 4–8s intervals rather than pushed.</p>
+      <div class="fix"><b>Fix:</b> adopt <code>supabase-js</code> Realtime channels for the feed + timeline. <b>Estimate:</b> 4–5 days.</div>
+    </div>
+
+    <div class="debt-item avoid">
+      <div class="debt-line"><span class="pill b-amber">High</span><h3 class="debt-title">Real user traffic</h3></div>
+      <p>Telemetry is sparse until the Court+ app ships to end users; the dashboard currently shines in demo mode.</p>
+      <div class="fix"><b>Fix:</b> ship to users, then the live feed, charts, and bookings counters populate organically.</div>
+    </div>
+
+    <div class="debt-item avoid">
+      <div class="debt-line"><span class="pill b-blue">Medium</span><h3 class="debt-title">Deploy automation for backend</h3></div>
+      <p>The <code>deploy_backend</code> job is gated on <code>SUPABASE_ACCESS_TOKEN</code>.</p>
+      <div class="fix"><b>Fix:</b> set the token as a repo secret to enable fully automated migrations/function deploys. <b>Estimate:</b> 1 day.</div>
+    </div>
+
+    <div class="debt-item avoid">
+      <div class="debt-line"><span class="pill b-blue">Medium</span><h3 class="debt-title">Proactive alerting</h3></div>
+      <p>Notifications are a manual poll of recent errors — no push alert on red runs or down services.</p>
+      <div class="fix"><b>Fix:</b> add alert rules (telegram/email) triggered by <code>ci-report</code> and <code>heartbeat</code>. <b>Estimate:</b> 2–3 days.</div>
+    </div>
+
+    <div class="debt-item avoid">
+      <div class="debt-line"><span class="pill b-gray">Low</span><h3 class="debt-title">Bundle size &amp; error tracking</h3></div>
+      <p>Single JS chunk is ~950&nbsp;kB; no Sentry integration yet.</p>
+      <div class="fix"><b>Fix:</b> code-split routes, adopt <code>manualChunks</code>, add Sentry. <b>Estimate:</b> 2 days.</div>
+    </div>
+  </div>
+
+  <div class="footer">Court+ Ops Dashboard — Built with React, TypeScript, Tailwind v4 &amp; Supabase · Technical specifications &amp; engineering handoff · v1.0</div>
+</div>
+
+</body>
+</html>
